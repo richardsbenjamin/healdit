@@ -8,12 +8,12 @@ import numpy as np
 import torch
 from scipy.spatial import transform
 
-from healvit.healvit.utils.geo import (
+from healdit.healdit.utils.geo import (
     get_cartesian_from_spherical,
     get_mesh_lon_lat,
     get_spherical_from_lat_lon_deg,
 )
-from healvit.healvit.utils.heal import get_neighbours_all
+from healdit.healdit.utils.heal import get_neighbours_all
 
 if TYPE_CHECKING:
     from typing import Optional

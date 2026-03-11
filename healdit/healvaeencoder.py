@@ -6,10 +6,10 @@ import numpy as np
 import torch 
 import torch.nn as nn
 
-from healvit.healvit.heal import HEALPix
-from healvit.healvit.healparts import HEALDownSampler
-from healvit.healvit.parts import FeedForward, MessagePassing, MLP
-from healvit.healvit.utils.graph import (
+from healdit.healdit.heal import HEALPix
+from healdit.healdit.healparts import HEALDownSampler
+from healdit.healdit.parts import FeedForward, MessagePassing, MLP
+from healdit.healdit.utils.graph import (
     get_edge_features,
     get_edge_index,
     get_mesh_to_mesh_edge_index,

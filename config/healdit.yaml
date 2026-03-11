@@ -2,7 +2,7 @@ defaults:
   - _self_
 
 healvae:
-  __target__: healvit.healvit.schemas.config.HEALVAEConfig
+  __target__: healdit.healdit.schemas.config.HEALVAEConfig
   depths: [3, 3, 3, 3]
   edge_feat_dim: 4
   edge_embed_dim: 32

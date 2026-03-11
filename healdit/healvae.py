@@ -6,21 +6,21 @@ import numpy as np
 import torch 
 import torch.nn as nn
 
-from healvit.healvit.healparts import (
+from healdit.healdit.healparts import (
     HEALEncoder,
     HEALDecoder,
     get_encoder_edge_details,
     get_decoder_edge_details,
 )
-from healvit.healvit.healvaeencoder import HEALVAEEncoder
-from healvit.healvit.healvaedecoder import HEALVAEDecoder
-from healvit.healvit.utils.geo import get_lat_lon_flat_grid
+from healdit.healdit.healvaeencoder import HEALVAEEncoder
+from healdit.healdit.healvaedecoder import HEALVAEDecoder
+from healdit.healdit.utils.geo import get_lat_lon_flat_grid
 
 
 if TYPE_CHECKING:
     from typing import Tuple
 
-    from healvit.healvit.schemas.config import HEALVAEConfig
+    from healdit.healdit.schemas.config import HEALVAEConfig
 
 
 class HEALVAE(nn.Module):

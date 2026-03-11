@@ -21,7 +21,7 @@ fi
 
 # Local paths
 HOME_DIR="/home/benjamin"
-MODULE_DIR="${HOME_DIR}/healvit"
+MODULE_DIR="${HOME_DIR}/healdit"
 OUTPUT_DIR="${MODULE_DIR}/outputs"
 
 if [ "$VERBOSE_MODE" = true ]; then

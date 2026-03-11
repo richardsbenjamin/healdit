@@ -1,4 +1,4 @@
-from healvit.healvit.utils.utils import (
+from healdit.healdit.utils.utils import (
     load_config,
     scatter_sum,
 )
