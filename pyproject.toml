@@ -18,4 +18,4 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["healdit"]
+packages = { find = { where = ["."], include = ["healdit*"] } }
