@@ -6,11 +6,11 @@ import numpy as np
 import torch 
 import torch.nn as nn
 
-from healdit.healdit.heal import HEALPix
-from healdit.healdit.healparts import HEALUpSampler
-from healdit.healdit.healvaeencoder import ResBlock
-from healdit.healdit.parts import MessagePassing, MLP
-from healdit.healdit.utils.graph import (
+from healdit.models.heal import HEALPix
+from healdit.models.healparts import HEALUpSampler
+from healdit.models.healvaeencoder import ResBlock
+from healdit.models.parts import MessagePassing, MLP
+from healdit.utils.graph import (
     get_edge_features,
     get_mesh_to_mesh_edge_index,
 )

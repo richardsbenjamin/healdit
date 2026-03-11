@@ -36,8 +36,7 @@ fi
 
 #############################################################
 cd ${MODULE_DIR}
-export PYTHONPATH=${HOME_DIR}
-
+export PYTHONPATH="${MODULE_DIR}"
 RUN_CMD="python scripts/${RUN}.py --config-name ${CONFIG_FILE}"
 
 # If output file is given, redirect output

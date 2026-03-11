@@ -1,8 +1,8 @@
 import torch
 from hydra.utils import instantiate
 
-from healdit.healdit import HEALVAE
-from healdit.healdit.utils import load_config
+from healdit.models import HEALVAE
+from healdit.utils import load_config
 from healdit.utils.parsers import get_train_args
 
 

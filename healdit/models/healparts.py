@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 import torch 
 import torch.nn as nn
 
-from healdit.healdit.heal import HEALPix
-from healdit.healdit.parts import FeedForward, MLP
-from healdit.healdit.utils import scatter_sum
-from healdit.healdit.utils.graph import (
+from healdit.models.heal import HEALPix
+from healdit.models.parts import FeedForward, MLP
+from healdit.utils import scatter_sum
+from healdit.utils.graph import (
     get_edge_index,
     get_edge_features,
     get_node_positions,
