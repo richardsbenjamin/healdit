@@ -1,0 +1,196 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import torch 
+import torch.nn as nn
+
+from healvit.healvit.heal import HEALPix
+from healvit.healvit.parts import FeedForward, MLP
+from healvit.healvit.utils import scatter_sum
+from healvit.healvit.utils.graph import (
+    get_edge_index,
+    get_edge_features,
+    get_node_positions,
+)
+
+if TYPE_CHECKING:
+    from typing import Tuple
+
+    from numpy import ndarray
+    from torch import Tensor
+
+
+def get_encoder_edge_details(
+        nside: int,
+        lat_flat: ndarray,
+        lon_flat: ndarray,
+        dtype: torch.dtype = torch.float32
+    ) -> Tuple[Tensor, Tensor]:
+    edge_index = get_edge_index(nside_in=nside, lon_flat=lon_flat, lat_flat=lat_flat)
+    edge_attr = torch.tensor(
+        get_edge_features(edge_index, rec=nside, send=(lon_flat, lat_flat)),
+        dtype=dtype,
+    )
+    return edge_index, edge_attr
+
+def get_decoder_edge_details(
+        n_out: int,
+        n_edge_closest: int,
+        lat_flat: ndarray,
+        lon_flat: ndarray,
+        dtype: torch.dtype = torch.float32
+    ) -> Tuple[Tensor, Tensor]:
+    grid_vecs, _, _ = get_node_positions(lat_flat, lon_flat)
+
+    edge_attr = (torch.arange(len(lon_flat) * n_edge_closest).to(dtype) % n_edge_closest).reshape(-1, 1)
+    edge_index = HEALPix(n=n_out).get_edge_index_by_knn(grid_vecs, n_edge_closest)
+    return edge_index, edge_attr
+
+
+class HEALEncoder(nn.Module):
+    
+    def __init__(
+            self,
+            edge_index: torch.Tensor,
+            edge_attr: torch.Tensor,
+            edge_in: int,
+            edge_out: int,
+            lin_in: int,
+            lin_out: int,
+        ) -> None:
+        super().__init__()
+        self.register_buffer("edge_index", edge_index)
+        self.register_buffer("edge_attr", edge_attr)
+        self.edge_embedder = MLP(
+            in_dim=edge_in,
+            hidden_dim=edge_out,
+            out_dim=edge_out,
+        )
+        self.g2m_linear = FeedForward(
+            in_dim=lin_in,
+            hidden_dim=lin_out,
+            out_dim=lin_out,
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        edge_attr = self.edge_attr.unsqueeze(0).expand(x.size(0), -1, -1)
+        v_g_prime = torch.cat([edge_attr, x.permute(0, 2, 1)], dim=-1)
+
+        v_g = self.edge_embedder(v_g_prime)
+        v_m_sum = scatter_sum(v_g, self.edge_index[1], dim=1)
+
+        return self.g2m_linear(v_m_sum)
+
+
+class HEALDecoder(nn.Module):
+
+    def __init__(
+            self,
+            edge_index: torch.Tensor,
+            edge_attr: torch.Tensor,
+            embed_in: int, 
+            embed_out: int,
+            lin_in: int,
+            lin_out: int,
+            dtype=torch.float32
+        ) -> None:
+        super().__init__()
+        self.register_buffer("edge_index", edge_index)
+        self.register_buffer("edge_attr", edge_attr)
+        self.edge_embedder = MLP(
+            in_dim=embed_in,
+            hidden_dim=embed_out,
+            out_dim=embed_out,
+        )
+        self.g2m_linear = FeedForward(
+            in_dim=lin_in,
+            hidden_dim=lin_out,
+            out_dim=lin_out,
+        )
+
+    def forward(self, x):
+        edge_features = self.embedder(self.edge_attr)
+        edge_features = edge_features.unsqueeze(0).expand(x.size(0), -1, -1)
+
+        v_s = x[:, self.edge_index[0], :]
+
+        v_s_prime = torch.cat([v_s, edge_features], dim=-1)
+        v_m_sum = scatter_sum(v_s_prime, self.edge_index[1], dim=1)
+
+        return self.linear(v_m_sum)
+
+
+
+class HEALDownSampler(nn.Module):
+
+    def __init__(
+            self,
+            edge_index: torch.Tensor,
+            edge_attr: torch.Tensor,
+            embed_in: int, 
+            embed_out: int,
+            lin_in: int,
+            lin_out: int,
+            dtype=torch.float32
+        ) -> None:
+        super().__init__()
+        self.register_buffer("edge_index", edge_index)
+        self.register_buffer("edge_attr", edge_attr)
+        self.edge_embedder = MLP(
+            in_dim=embed_in,
+            hidden_dim=embed_out,
+            out_dim=embed_out,
+        )
+        self.linear = FeedForward(
+            in_dim=lin_in,
+            hidden_dim=lin_out,
+            out_dim=lin_out,
+        )
+
+    def forward(self, x):
+        edge_features = self.edge_embedder(self.edge_attr)
+        edge_features = edge_features.unsqueeze(0).expand(x.size(0), -1, -1)
+
+        v_m_prime = torch.cat([edge_features, x], dim=-1)
+        x = scatter_sum(v_m_prime, self.edge_index[1], dim=1)
+
+        return self.linear(x)
+
+
+class HEALUpSampler(nn.Module):
+
+    def __init__(
+            self,
+            edge_index: torch.Tensor,
+            edge_attr: torch.Tensor,
+            embed_in: int, 
+            embed_out: int,
+            lin_in: int,
+            lin_out: int,
+            dtype=torch.float32
+        ) -> None:
+        super().__init__()
+        self.register_buffer("edge_index", edge_index)
+        self.register_buffer("edge_attr", edge_attr)
+        self.edge_embedder = MLP(
+            in_dim=embed_in,
+            hidden_dim=embed_out,
+            out_dim=embed_out,
+        )
+        self.linear = FeedForward(
+            in_dim=lin_in,
+            hidden_dim=lin_out,
+            out_dim=lin_out,
+        )
+
+    def forward(self, x):
+        edge_features = self.edge_embedder(self.edge_attr)
+        edge_features = edge_features.unsqueeze(0).expand(x.size(0), -1, -1)
+
+        v_s = x[:, self.edge_index[0], :]
+
+        v_s_prime = torch.cat([v_s, edge_features], dim=-1)
+        v_m_sum = scatter_sum(v_s_prime, self.edge_index[1], dim=1)
+
+        return self.linear(v_m_sum)

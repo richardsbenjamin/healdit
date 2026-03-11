@@ -1,0 +1,16 @@
+defaults:
+  - _self_
+
+healvae:
+  __target__: healvit.healvit.schemas.config.HEALVAEConfig
+  depths: [3, 3, 3, 3]
+  edge_feat_dim: 4
+  edge_embed_dim: 32
+  input_feat_dim: 2
+  lat_lon_res: [180, 360]
+  node_feat_dim: 32
+  node_hidden_dim: 32
+  n_edge_closest: 4
+  output_feat_dim: 2
+  starting_n: 6
+  z_dim: 16
