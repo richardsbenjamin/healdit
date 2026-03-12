@@ -36,7 +36,7 @@ def load_config(
     if schema_node is not None:
         cs = ConfigStore.instance()
         cs.store(name=config_name, node=schema_node)
-    with initialize(version_base=None, config_path="../../config"):
+    with initialize(version_base=None, config_path="../config"):
         cfg = compose(config_name=config_name, overrides=overrides)
         return cfg
 
