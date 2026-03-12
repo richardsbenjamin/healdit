@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import torch
 from hydra.core.config_store import ConfigStore
-from hydra import initialize, compose
+from hydra import initialize, initialize_config_dir, compose
 
 if TYPE_CHECKING:
     from typing import Optional, List
