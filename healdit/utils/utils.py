@@ -28,6 +28,7 @@ def broadcast(src: Tensor, other: Tensor, dim: int) -> Tensor:
 
 def load_config(
         config_name: str = "config", 
+        config_path: Optional[str] = "../config",
         overrides: Optional[List[str]] = None,
         schema_node: Optional[Node] = None,
     ) -> DictConfig:
@@ -36,7 +37,7 @@ def load_config(
     if schema_node is not None:
         cs = ConfigStore.instance()
         cs.store(name=config_name, node=schema_node)
-    with initialize(version_base=None, config_path="../config"):
+    with initialize(version_base=None, config_path=config_path):
         cfg = compose(config_name=config_name, overrides=overrides)
         return cfg
 
