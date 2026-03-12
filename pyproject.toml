@@ -19,6 +19,4 @@ dependencies = [
 
 [tool.setuptools]
 packages = { find = { where = ["."], include = ["healdit*"] } }
-
-[tool.setuptools.package-data]
-healdit = ["config/*.yaml"]
+include-package-data = true
