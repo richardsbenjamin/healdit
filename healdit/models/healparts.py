@@ -118,7 +118,7 @@ class HEALDecoder(nn.Module):
         v_s_prime = torch.cat([v_s, edge_features], dim=-1)
         v_m_sum = scatter_sum(v_s_prime, self.edge_index[1], dim=1)
 
-        return self.linear(v_m_sum)
+        return self.g2m_linear(v_m_sum)
 
 
 
