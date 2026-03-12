@@ -28,18 +28,16 @@ def broadcast(src: Tensor, other: Tensor, dim: int) -> Tensor:
 
 def load_config(
         config_name: str = "config", 
-        config_path: Optional[str] = "../config",
+        config_path: Optional[str] = None,
         overrides: Optional[List[str]] = None,
-        schema_node: Optional[Node] = None,
     ) -> DictConfig:
-    if overrides is None:
-        overrides = sys.argv[1:]
-    if schema_node is not None:
-        cs = ConfigStore.instance()
-        cs.store(name=config_name, node=schema_node)
-    with initialize(version_base=None, config_path=config_path):
-        cfg = compose(config_name=config_name, overrides=overrides)
-        return cfg
+    if config_path and os.path.isabs(config_path):
+        with initialize_config_dir(version_base=None, config_dir=config_path):
+            return compose(config_name=config_name, overrides=overrides)
+
+    path = config_path or "../config"
+    with initialize(version_base=None, config_path=path):
+        return compose(config_name=config_name, overrides=overrides)
 
 def scatter_sum(
         src: Tensor,

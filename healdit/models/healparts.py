@@ -110,7 +110,7 @@ class HEALDecoder(nn.Module):
         )
 
     def forward(self, x):
-        edge_features = self.embedder(self.edge_attr)
+        edge_features = self.edge_embedder(self.edge_attr)
         edge_features = edge_features.unsqueeze(0).expand(x.size(0), -1, -1)
 
         v_s = x[:, self.edge_index[0], :]
