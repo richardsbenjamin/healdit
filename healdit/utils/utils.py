@@ -11,9 +11,10 @@ from hydra import initialize, initialize_config_dir, compose
 if TYPE_CHECKING:
     from typing import Optional, List
 
+    from hydra.types import Node
     from omegaconf import DictConfig
     from torch import Tensor
-    from hydra.types import Node
+    from xarray import Dataset
 
 
 def broadcast(src: Tensor, other: Tensor, dim: int) -> Tensor:
@@ -60,3 +61,20 @@ def scatter_sum(
         return out.scatter_add_(dim, index, src)
     else:
         return out.scatter_add_(dim, index, src)
+
+def resample_edh_data(
+    ds: Dataset, 
+    variables: list[str], 
+    start_date: str = "1979-01-01", 
+    end_date: str = "2020-12-31",
+    resample_rate: str = "6h",
+    pressure_levels: Optional[List] = None,
+) -> Dataset:
+    ds = ds[variables].sel(valid_time=slice(start_date, end_date))
+    if pressure_levels is not None:
+        ds = ds.sel(isobaricInhPa=pressure_levels, method="nearest")
+    return (
+        ds.resample(valid_time=resample_rate)
+        .nearest()
+    )
+

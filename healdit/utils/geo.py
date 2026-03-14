@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import hpgeom as hpg
 import numpy as np
+import xarray as xr
 
 if TYPE_CHECKING:
     from typing import Tuple
@@ -36,3 +37,27 @@ def get_spherical_from_lat_lon_deg(
     phi = np.deg2rad(node_lon)
     theta = np.deg2rad(90 - node_lat)
     return phi, theta
+
+def get_regridded_dataset(ds: xr.Dataset, target_res: float = 1) -> xr.Dataset:
+    try:
+        import xesmf as xe
+    except ImportError:
+        raise ImportError(
+            "The 'xesmf' package is required for regridding. "
+            "Please install it via conda: 'conda install -c conda-forge xesmf'"
+        )
+    n_lat = int(180 / target_res) + 1 
+    n_lon = int(360 / target_res)
+
+    ds_out = xr.Dataset(
+        {
+            "lat": (["lat"], np.linspace(-90, 90, n_lat)),
+            "lon": (["lon"], np.linspace(0, 360, n_lon, endpoint=False)),
+        }
+    )
+    regridder = xe.Regridder(
+        ds, ds_out, method="bilinear", periodic=True
+    )
+    ds_regridded = regridder(ds)
+    return ds_regridded
+

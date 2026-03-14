@@ -102,23 +102,23 @@ class TopDownBlock(nn.Module):
             edge_index: torch.Tensor,
             edge_features: torch.Tensor,
         ) -> torch.Tensor:
-        xa = torch.cat([x, a], dim=-1)
-
-        qm, qv = self.block(xa, edge_index, edge_features).chunk(2, dim=-1)
         pfeat = self.prior(x, edge_index, edge_features)
         pm = pfeat[:, :, :self.z_dim]
         pv = pfeat[:, :, self.z_dim:self.z_dim*2]
         px = pfeat[:, :, self.z_dim*2:]
 
+        xa = torch.cat([x, a], dim=-1)
+        delta_m, delta_v = self.block(xa, edge_index, edge_features).chunk(2, dim=-1)
+        qm = pm + delta_m
+        qv = pv + delta_v
+
         z = self.z_feedforward(
             draw_gaussian_diag_samples(qm, qv)
         )
         kl = gaussian_analytical_kl(qm, pm, qv, pv)
-
         x = x + px 
         x = x + z
         x = x + self.res_out(x, edge_index, edge_features)
-
         return x, kl
 
 
