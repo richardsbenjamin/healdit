@@ -228,6 +228,6 @@ class HEALVAEDecoder(nn.Module):
             if x is None:
                 x = torch.zeros_like(a)
             x, layer_kl = layer(x, a)
-            decoder_kl.extend(layer_kl)
+            decoder_kl.append(layer_kl)
 
         return x, decoder_kl
