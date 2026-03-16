@@ -7,7 +7,7 @@ from edhclient import EDHClient
 
 from healdit.utils import resample_edh_data
 from healdit.utils.geo import get_regridded_dataset
-from healdit.utils.parsers import get_data_download_args
+from healdit.utils.parsers import get_data2bucket_args
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     )
     client = Client(cluster)
     
-    args = get_data_download_args()
+    args = get_data2bucket_args()
     print(f"Downloading data from EDH for the period {args.start_date} to {args.end_date}.")
 
     edh_client = EDHClient()

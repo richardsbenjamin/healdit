@@ -19,7 +19,7 @@ ZARR_OUTPUT_PATH="gs://healditstorage/era5_data_6h_1degree_test.zarr"
 #############################################################
 cd ${MODULE_DIR}
 export PYTHONPATH="${MODULE_DIR}"
-RUN_CMD="python scripts/data_download.py
+RUN_CMD="python scripts/data2bucket.py
     --chunk-size ${CHUNK_SIZE}
     --time-dim ${TIME_DIM}
     --target-res ${TARGET_RES}

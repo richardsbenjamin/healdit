@@ -75,7 +75,7 @@ class HEALEncoder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         edge_attr = self.edge_attr.unsqueeze(0).expand(x.size(0), -1, -1)
-        v_g_prime = torch.cat([edge_attr, x.permute(0, 2, 1)], dim=-1)
+        v_g_prime = torch.cat([edge_attr, x], dim=-1)
 
         v_g = self.edge_embedder(v_g_prime)
         v_m_sum = scatter_sum(v_g, self.edge_index[1], dim=1)

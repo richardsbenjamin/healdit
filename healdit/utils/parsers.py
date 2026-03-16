@@ -7,7 +7,32 @@ if TYPE_CHECKING:
     from argparse import Namespace
 
 
-DATA_DOWNLOAD_PARSER_ARGS = {
+BUCKET2DISK_PARSER_ARGS = {
+    "zarr_input_path": {
+        "type": str,
+        "required": True,
+        "help": "Path to the input zarr file."
+    },
+    "zarr_output_path": {
+        "type": str,
+        "required": True,
+        "help": "Path to the output zarr file."
+    },
+    "start-date": {
+        "type": str,
+        "required": False,
+        "default": "1979-01-01",
+        "help": "Start date for data retrieval in YYYY-MM-DD format."
+    },
+    "end-date": {
+        "type": str,
+        "required": False,
+        "default": "2020-12-31",
+        "help": "End date for data retrieval in YYYY-MM-DD format."
+    },
+}
+
+DATA2BUCKET_PARSER_ARGS = {
     "chunk-size": {
         "type": str,
         "required": False,
@@ -67,6 +92,48 @@ DATA_DOWNLOAD_PARSER_ARGS = {
     }
 }
 
+RECHUNK_PARSER_ARGS = {
+    "input-path": {
+        "type": str,
+        "required": True,
+        "help": "Path to the input zarr file."
+    },
+    "output-path": {
+        "type": str,
+        "required": True,
+        "help": "Path to the output zarr file."
+    },
+    "temp-path": {
+        "type": str,
+        "required": True,
+        "help": "Path to the temporary zarr file."
+    },
+    "time-chunk-size": {
+        "type": int,
+        "required": False,
+        "default": 1,
+        "help": "Size of the time chunk."
+    },
+    "lat-chunk-size": {
+        "type": int,
+        "required": False,
+        "default": 181,
+        "help": "Size of the latitude chunk."
+    },
+    "lon-chunk-size": {
+        "type": int,
+        "required": False,
+        "default": 360,
+        "help": "Size of the longitude chunk."
+    },
+    "max-mem": {
+        "type": str,
+        "required": False,
+        "default": "2GB",
+        "help": "Maximum memory to use for rechunking."
+    }
+}
+
 TRAIN_PARSER_ARGS = {
     "config-name": {
         "type": str,
@@ -95,8 +162,14 @@ def get_arg_parser(description: str, args_dict: dict[str, dict]) -> Namespace:
     run_args = arg_parser.parse_args()
     return run_args
 
-def get_data_download_args() -> Namespace:
-    return get_arg_parser("Download data from EDH.", DATA_DOWNLOAD_PARSER_ARGS)
+def get_bucket2disk_args() -> Namespace:
+    return get_arg_parser("Write data from bucket to disk.", BUCKET2DISK_PARSER_ARGS)
+
+def get_data2bucket_args() -> Namespace:
+    return get_arg_parser("Download data from EDH.", DATA2BUCKET_PARSER_ARGS)
+
+def get_rechunk_args() -> Namespace:
+    return get_arg_parser("Rechunk a zarr file.", RECHUNK_PARSER_ARGS)
 
 def get_train_args() -> Namespace:
     return get_arg_parser("Train HealVAE.", TRAIN_PARSER_ARGS)

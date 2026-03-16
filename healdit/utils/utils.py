@@ -37,7 +37,7 @@ def load_config(
         with initialize_config_dir(version_base=None, config_dir=config_path):
             return compose(config_name=config_name, overrides=overrides)
 
-    path = config_path or "../config"
+    path = config_path or "../../config"
     with initialize(version_base=None, config_path=path):
         return compose(config_name=config_name, overrides=overrides)
 

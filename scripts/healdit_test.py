@@ -1,19 +1,41 @@
+import numpy as np
 import torch
+import xarray as xr
 from hydra.utils import instantiate
 
+from healdit.datasets import ZarrDataset
 from healdit.models import HEALVAE
+from healdit.train import train
 from healdit.utils import load_config
 from healdit.utils.parsers import get_train_args
 
+def get_idx(ds: xr.Dataset, date: str) -> int:
+    return (ds.valid_time.values >= np.datetime64(date)).argmax()
 
 if __name__ == "__main__":
     args = get_train_args()
-    cfg = load_config(args.config_name, args.overrides)
+    cfg = load_config(args.config_name, overrides=args.overrides)
     healdit_cfg = instantiate(cfg.healvae)
+    train_params = instantiate(cfg.healvaetrainparams)
+
+    ds = xr.open_zarr(train_params.data_path, consolidated=True)
+    train_start_idx = get_idx(ds, train_params.train_start)
+    train_end_idx = get_idx(ds, train_params.train_end)
+    val_start_idx = get_idx(ds, train_params.val_start)
+    val_end_idx = get_idx(ds, train_params.val_end)
+    ds.close()
+
+    train_dataset = ZarrDataset(train_params.data_path, time_slice=slice(train_start_idx, train_end_idx))
+    val_dataset = ZarrDataset(train_params.data_path, time_slice=slice(val_start_idx, val_end_idx))
+
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=train_params.batch_size)
+    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=train_params.batch_size)
 
     heal_vae = HEALVAE(healdit_cfg)
 
-    x = torch.rand(1, healdit_cfg.input_feat_dim, *healdit_cfg.lat_lon_res, dtype=torch.float32).reshape(1, healdit_cfg.input_feat_dim, -1)
+    train_history = train(
+        model=heal_vae,
+        loader=train_dataloader,
+        params=train_params,
+    )
 
-    output = heal_vae(x)
-    print(heal_vae)
