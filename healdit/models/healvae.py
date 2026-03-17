@@ -28,10 +28,12 @@ class HEALVAE(nn.Module):
     def __init__(
             self,
             config: HEALVAEConfig,
+            device: torch.device,
         ) -> None:
         super().__init__()
         # TO DO: validation checks e.g. if starting_n with # of depths makes sense
         self.config = config
+        self.device = device
         self._set_encoder_decoder_edge_details()
 
         self.heal_encoder = HEALEncoder(
@@ -48,6 +50,7 @@ class HEALVAE(nn.Module):
             node_feat_dim=config.node_feat_dim,
             edge_feat_dim=config.edge_feat_dim,
             edge_embed_dim=config.edge_embed_dim,
+            device=device,
         )
         self.decoder = HEALVAEDecoder(
             depths=config.depths,
@@ -56,6 +59,7 @@ class HEALVAE(nn.Module):
             edge_feat_dim=config.edge_feat_dim,
             edge_embed_dim=config.edge_embed_dim,
             z_dim=config.z_dim,
+            device=device,
         )
         self.heal_decoder = HEALDecoder(
             edge_index=self.dec_edge_index,
@@ -73,9 +77,9 @@ class HEALVAE(nn.Module):
             self.config.starting_n, self.config.n_edge_closest, lat_flat, lon_flat,
         )
         self.register_buffer("enc_edge_index", enc_edge_index)
-        self.register_buffer("enc_edge_attr", enc_edge_attr)
+        self.register_buffer("enc_edge_attr", enc_edge_attr.to(self.device))
         self.register_buffer("dec_edge_index", dec_edge_index)
-        self.register_buffer("dec_edge_attr", dec_edge_attr)
+        self.register_buffer("dec_edge_attr", dec_edge_attr.to(self.device))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.heal_encoder(x)

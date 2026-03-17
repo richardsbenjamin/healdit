@@ -55,6 +55,7 @@ class HEALVAEEncoderBlock(nn.Module):
             edge_feat_dim: int,
             edge_embed_dim: int,
             downsample: bool,
+            device: torch.device,
         ) -> None:
         super().__init__()
         self.healpix = healpix
@@ -90,7 +91,7 @@ class HEALVAEEncoderBlock(nn.Module):
         ).reshape(-1, 1)
         edge_index = get_edge_index(nside_in=self.healpix.nside, nside_out=healpix_down.nside)
         self.register_buffer("down_edge_index", edge_index)
-        self.register_buffer("down_edge_attr", edge_attr)
+        self.register_buffer("down_edge_attr", edge_attr.to(self.device))
 
     def _set_res_block_edge_details(self) -> None:
         edge_index = get_mesh_to_mesh_edge_index(nside=self.healpix.nside)
@@ -99,7 +100,7 @@ class HEALVAEEncoderBlock(nn.Module):
             .astype(np.float32)
         )
         self.register_buffer("res_edge_index", edge_index)
-        self.register_buffer("res_edge_attr", edge_attr)
+        self.register_buffer("res_edge_attr", edge_attr.to(self.device))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         edge_features = self.edge_embedder(self.res_edge_attr)
@@ -117,6 +118,7 @@ class HEALVAEEncoder(nn.Module):
             node_feat_dim: int,
             edge_feat_dim: int,
             edge_embed_dim: int,
+            device: torch.device,
         ) -> None:
         super().__init__()
         self.layers = nn.ModuleList()
@@ -130,6 +132,7 @@ class HEALVAEEncoder(nn.Module):
                     edge_feat_dim=edge_feat_dim,
                     edge_embed_dim=edge_embed_dim,
                     downsample=i != len(depths) - 1,
+                    device=device,
                 )
             )
 

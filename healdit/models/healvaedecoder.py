@@ -135,6 +135,7 @@ class HEALVAEDecoderBlock(nn.Module):
             depth: int,
             upsample: bool,
             n_edge_closest: int = 4,
+            device: torch.device = "cuda",
         ) -> None:
         super().__init__()
         self.healpix = healpix
@@ -172,14 +173,14 @@ class HEALVAEDecoderBlock(nn.Module):
             .astype(np.float32)
         )
         self.register_buffer("top_down_edge_index", edge_index)
-        self.register_buffer("top_down_edge_attr", edge_attr)
+        self.register_buffer("top_down_edge_attr", edge_attr.to(self.device))
 
     def _set_upsampler_edge_details(self) -> None:
         healpix_down = HEALPix(n=self.healpix.n-1)
         edge_attr = (torch.arange(self.healpix.npix * self.n_edge_closest).to(torch.float32) % 4).reshape(-1, 1)
         edge_index = healpix_down.get_edge_index_by_knn(self.healpix, self.n_edge_closest)
         self.register_buffer("up_edge_index", edge_index)
-        self.register_buffer("up_edge_attr", edge_attr)
+        self.register_buffer("up_edge_attr", edge_attr.to(self.device))
 
     def forward(self, x: torch.Tensor, a: torch.Tensor) -> torch.Tensor:
         edge_features = self.edge_embedder(self.top_down_edge_attr)
@@ -202,6 +203,7 @@ class HEALVAEDecoder(nn.Module):
             edge_embed_dim: int,
             z_dim: int,
             n_edge_closest: int = 4,
+            device: torch.device = "cuda",
         ) -> None:
         super().__init__()
         self.layers = nn.ModuleList()
@@ -217,6 +219,7 @@ class HEALVAEDecoder(nn.Module):
                     edge_embed_dim=edge_embed_dim,
                     upsample=i != 0,
                     n_edge_closest=n_edge_closest,
+                    device=device,
                 )
             )
 

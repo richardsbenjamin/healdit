@@ -36,7 +36,7 @@ if __name__ == "__main__":
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=train_params.batch_size)
     val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=train_params.batch_size)
 
-    heal_vae = HEALVAE(healdit_cfg)
+    heal_vae = HEALVAE(healdit_cfg, train_params.device)
 
     if train_params.weight_init is not None:
         train_params.weight_init(heal_vae, healdit_cfg)
