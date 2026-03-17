@@ -60,6 +60,7 @@ class HEALVAEEncoderBlock(nn.Module):
         super().__init__()
         self.healpix = healpix
         self.depth = depth 
+        self.device = device
         self._set_res_block_edge_details()
         self._set_downsampler_edge_details()
 

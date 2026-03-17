@@ -140,6 +140,7 @@ class HEALVAEDecoderBlock(nn.Module):
         super().__init__()
         self.healpix = healpix
         self.n_edge_closest = n_edge_closest
+        self.device = device
         self._set_top_down_block_edge_details()
         self._set_upsampler_edge_details()
         self.blocks = nn.ModuleList()
