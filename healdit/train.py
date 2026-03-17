@@ -27,6 +27,8 @@ def train(
     
     history: Dict[str, List[Any]] = {
         "grad_norm": [],
+        "batch_grad_norm": [],
+        "batch_step": [],
         "total_kl": [],
         "kl_levels": [],
         "recon_loss": [],
@@ -54,8 +56,11 @@ def train(
 
                 grad_norm = torch.nn.utils.clip_grad_norm_(
                     model.parameters(), 
-                    max_norm=params.max_norm
+                    max_norm=params.max_norm or float('inf')
                 ).item()
+
+                history["batch_grad_norm"].append(grad_norm)
+                history["batch_step"].append(step)
 
                 if params.gradient_threshold is not None and grad_norm >= params.gradient_threshold:
                     total_skips += 1
@@ -96,14 +101,14 @@ def vae_loss(
     
     rl = crit(x, y).mean(dim=(1, 2)) 
     
-    kl_per_level = []
+    kl_per_level = {}
     rpp = torch.zeros_like(rl)
     
-    for kl_list in decoder_kl:
+    for n, kl_list in decoder_kl.items():
         level_sum = torch.stack([k.sum(dim=list(range(1, k.dim()))) for k in kl_list]).sum(dim=0)
         level_sum /= np.prod(x.shape[1:])
         rpp += level_sum
-        kl_per_level.append(level_sum.mean().item())
+        kl_per_level[n] = level_sum.mean().item()
         
     elbo = (rpp + rl * beta).mean()
     

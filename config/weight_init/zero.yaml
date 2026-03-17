@@ -1,0 +1,2 @@
+_target_: healdit.utils.weights.apply_posterior_zero
+_partial_: true

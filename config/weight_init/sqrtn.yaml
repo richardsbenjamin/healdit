@@ -1,0 +1,2 @@
+_target_: healdit.utils.weights.apply_sqrtn_scale
+_partial_: true

@@ -141,10 +141,10 @@ TRAIN_PARSER_ARGS = {
         "help": "Name of the config file to use."
     },
     "overrides": {
-        "type": list[str],
+        "type": str,
         "required": False,
-        "default": [],
-        "help": "Overrides for the config file."
+        "default": "",
+        "help": "Comma separated overrides for the config file. E.g. 'weight_init=zero,batch_size=2'"
     },
 }
 

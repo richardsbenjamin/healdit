@@ -7,12 +7,9 @@ from edhclient import EDHClient
 
 from healdit.utils import resample_edh_data
 from healdit.utils.geo import get_regridded_dataset
-from healdit.utils.parsers import get_data2bucket_args
+from healdit.utils.parsers import get_data2bucket_args, comma_list_to_list
 
 logger = logging.getLogger(__name__)
-
-def comma_list_to_list(comma_list: str, type_: type) -> list:
-    return [type_(item.strip()) for item in comma_list.split(",") if item.strip()]
 
 def get_chunks_spec(time_dim: str, dims: list[str]) -> dict[str, str | int]:
     chunks_spec = {d: -1 for d in dims} 

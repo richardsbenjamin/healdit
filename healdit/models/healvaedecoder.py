@@ -220,14 +220,14 @@ class HEALVAEDecoder(nn.Module):
                 )
             )
 
-    def forward(self, activations: torch.Tensor) -> Tuple[torch.Tensor, List]:
+    def forward(self, activations: torch.Tensor) -> Tuple[torch.Tensor, Dict[int, List[torch.Tensor]]]:
         activations = activations[::-1]
         x = None
-        decoder_kl = []
+        decoder_kl = {}
         for a, layer in zip(activations, self.layers): 
             if x is None:
                 x = torch.zeros_like(a)
             x, layer_kl = layer(x, a)
-            decoder_kl.append(layer_kl)
+            decoder_kl[layer.healpix.n] = layer_kl
 
         return x, decoder_kl

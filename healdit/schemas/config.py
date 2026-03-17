@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from omegaconf import MISSING
 
 if TYPE_CHECKING:
-    from typing import Any, Tuple
+    from typing import Any, Callable, Tuple
 
 
 @dataclass
@@ -32,20 +32,25 @@ class MSEParams:
 class TrainParams:
     accumulation_steps: int
     batch_size: int
-    data_path: str
     device: str
     epochs: int
     gradient_threshold: Optional[float]
-    max_norm: float
+    max_norm: Optional[float]
     train_start: str
     train_end: str
     val_start: str
     val_end: str
     criterion: Any = MISSING # nn.Module
     optimiser: Any = MISSING # optim.Optimizer
+    weight_init: Optional[Callable] = None
 
+@dataclass
+class Paths:
+    data_path: str
+    history_path: str
 
 @dataclass
 class Config:
     healvae: HEALVAEConfig = MISSING
     healvaetrainparams: TrainParams = MISSING
+    paths: Paths = MISSING

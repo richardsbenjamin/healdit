@@ -1,0 +1,41 @@
+defaults:
+  - _self_
+  - /modules@trainparams.criterion: mse
+  - /modules@trainparams.optimiser: adam
+  - /weight_init@trainparams.weight_init: null
+
+paths:
+  data_path: "${paths.module_path}/data/"
+  history_fname: "history.pkl"
+  history_path: "${paths.output_path}${paths.history_fname}"
+  input_data_path: "${paths.data_path}era5_data_6h_1degree_2011_2016_rechunked.zarr"
+  module_path: "/home/benjamin/healdit/"
+  output_path: "${paths.module_path}outputs/"
+
+healvae:
+  _target_: healdit.schemas.HEALVAEConfig
+  depths: [2, 2]
+  edge_feat_dim: 4
+  edge_embed_dim: 16
+  input_feat_dim: 2
+  lat_lon_res: [181, 360]
+  node_feat_dim: 16
+  node_hidden_dim: 16
+  n_edge_closest: 4 
+  output_feat_dim: 2
+  starting_n: 4
+  z_dim: 16
+  
+trainparams:
+  _target_: healdit.schemas.TrainParams
+  accumulation_steps: 32
+  batch_size: 1
+  device: "cpu"
+  epochs: 1
+  gradient_threshold: null
+  max_norm: null
+  train_start: "2011-01-01T00:00:00"
+  train_end: "2011-01-31T18:00:00"
+  val_start: "2016-01-01T00:00:00"
+  val_end: "2016-12-31T18:00:00"
+
