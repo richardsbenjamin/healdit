@@ -7,6 +7,35 @@ if TYPE_CHECKING:
     from argparse import Namespace
 
 
+def get_arg_parser(description: str, args_dict: dict[str, dict]) -> Namespace:
+    arg_parser = ArgumentParser(description=description)
+    for arg, arg_params in args_dict.items():
+        arg_parser.add_argument(
+            f'--{arg}',
+            type=arg_params["type"],
+            required=arg_params["required"],
+            help=arg_params["help"],
+            default=arg_params.get("default"),
+        )
+    run_args = arg_parser.parse_args()
+    return run_args
+
+def get_bucket2disk_args() -> Namespace:
+    return get_arg_parser("Write data from bucket to disk.", BUCKET2DISK_PARSER_ARGS)
+
+def get_data2bucket_args() -> Namespace:
+    return get_arg_parser("Download data from EDH.", DATA2BUCKET_PARSER_ARGS)
+
+def get_norm_calc_args() -> Namespace:
+    return get_arg_parser("Calculate mean and std of a zarr file.", NORM_CALC_PARSER_ARGS)
+
+def get_rechunk_args() -> Namespace:
+    return get_arg_parser("Rechunk a zarr file.", RECHUNK_PARSER_ARGS)
+
+def get_train_args() -> Namespace:
+    return get_arg_parser("Train HealVAE.", TRAIN_PARSER_ARGS)
+
+
 BUCKET2DISK_PARSER_ARGS = {
     "zarr_input_path": {
         "type": str,
@@ -92,6 +121,29 @@ DATA2BUCKET_PARSER_ARGS = {
     }
 }
 
+NORM_CALC_PARSER_ARGS = {
+    "train_start": {
+        "type": str,
+        "required": True,
+        "help": "Start date for data retrieval in YYYY-MM-DDTHH:MM:SS format."
+    },
+    "train_end": {
+        "type": str,
+        "required": True,
+        "help": "End date for data retrieval in YYYY-MM-DDTHH:MM:SS format."
+    },
+    "zarr_input_path": {
+        "type": str,
+        "required": True,
+        "help": "Path to the input zarr file."
+    },
+    "zarr_output_path": {
+        "type": str,
+        "required": True,
+        "help": "Path to the output zarr file."
+    },
+}
+
 RECHUNK_PARSER_ARGS = {
     "input-path": {
         "type": str,
@@ -147,29 +199,3 @@ TRAIN_PARSER_ARGS = {
         "help": "Comma separated overrides for the config file. E.g. 'weight_init=zero,batch_size=2'"
     },
 }
-
-
-def get_arg_parser(description: str, args_dict: dict[str, dict]) -> Namespace:
-    arg_parser = ArgumentParser(description=description)
-    for arg, arg_params in args_dict.items():
-        arg_parser.add_argument(
-            f'--{arg}',
-            type=arg_params["type"],
-            required=arg_params["required"],
-            help=arg_params["help"],
-            default=arg_params.get("default"),
-        )
-    run_args = arg_parser.parse_args()
-    return run_args
-
-def get_bucket2disk_args() -> Namespace:
-    return get_arg_parser("Write data from bucket to disk.", BUCKET2DISK_PARSER_ARGS)
-
-def get_data2bucket_args() -> Namespace:
-    return get_arg_parser("Download data from EDH.", DATA2BUCKET_PARSER_ARGS)
-
-def get_rechunk_args() -> Namespace:
-    return get_arg_parser("Rechunk a zarr file.", RECHUNK_PARSER_ARGS)
-
-def get_train_args() -> Namespace:
-    return get_arg_parser("Train HealVAE.", TRAIN_PARSER_ARGS)

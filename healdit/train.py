@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     import torch.optim as optim
     from torch.utils.data import DataLoader
 
+    from healdit.batch import Batch
     from healdit.schemas.config import TrainParams
 
 
@@ -92,21 +93,22 @@ def train(
     return history
 
 def vae_loss(
-        x: torch.Tensor, 
+        x: Batch, 
         model: nn.Module, 
-        crit: nn.Module, 
-        beta: float = 10.0
+        crit: BatchLoss, 
+        beta: float = 1.0,
     ) -> Dict:
-    y, decoder_kl = model(x)
+    x = model.normalise(x)
+    decoder_kl, y = model(x)
     
     rl = crit(x, y).mean(dim=(1, 2)) 
     
     kl_per_level = {}
     rpp = torch.zeros_like(rl)
-    
+    n = x.values.shape[1:]
     for n, kl_list in decoder_kl.items():
         level_sum = torch.stack([k.sum(dim=list(range(1, k.dim()))) for k in kl_list]).sum(dim=0)
-        level_sum /= np.prod(x.shape[1:])
+        level_sum /= np.prod(n)
         rpp += level_sum
         kl_per_level[n] = level_sum.mean().item()
         

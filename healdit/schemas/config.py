@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 
 from omegaconf import MISSING
 
+from healdit.batch import BatchLoss
+
 if TYPE_CHECKING:
     from typing import Any, Callable, Tuple
 
@@ -16,9 +18,10 @@ class HEALVAEConfig:
     edge_embed_dim: int
     input_feat_dim: int
     lat_lon_res: Tuple[int, int]
+    n_edge_closest: int
     node_feat_dim: int
     node_hidden_dim: int
-    n_edge_closest: int
+    normalisation: dict
     output_feat_dim: int
     starting_n: int
     z_dim: int
@@ -43,6 +46,9 @@ class TrainParams:
     criterion: Any = MISSING # nn.Module
     optimiser: Any = MISSING # optim.Optimizer
     weight_init: Optional[Callable] = None
+
+    def __post_init__(self) -> None:
+        self.criterion = BatchLoss(self.criterion)
 
 @dataclass
 class Paths:

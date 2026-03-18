@@ -25,8 +25,9 @@ healvaetrainparams:
   epochs: 1
   gradient_threshold: 0.0
   max_norm: 1.0
-  train_start: "2011-01-01T00:00:00"
+  train_start: "1979-01-01T00:00:00"
   train_end: "2015-12-31T18:00:00"
   val_start: "2016-01-01T00:00:00"
-  val_end: "2016-12-31T18:00:00"
-
+  val_end: "2017-12-31T18:00:00"
+  test_start: "2018-01-01T00:00:00"
+  test_end: "2020-12-31T18:00:00"

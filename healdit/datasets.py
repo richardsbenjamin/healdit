@@ -4,8 +4,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
-from torch.utils.data import IterableDataset
 import zarr
+from torch.utils.data import IterableDataset
+
+from healdit.batch import Batch
 
 if TYPE_CHECKING:
     from typing import Iterator, List, Optional
@@ -21,7 +23,6 @@ class ZarrDataset(IterableDataset):
         ) -> None:
         self.path = path
         self.variables = variables
-        self.n_var = len(variables)
         self.root = zarr.open_consolidated(path)
         self.chunk_size = self.root[variables[0]].chunks[0]
         self._set_chunk_starts(time_slice)
@@ -37,11 +38,13 @@ class ZarrDataset(IterableDataset):
         for start in self.chunk_starts:
             end = min(start + self.chunk_size, self.end_idx)
             arrays = [self.root[v][start:end] for v in self.variables]
-            chunk_data = np.stack(arrays, axis=1)
-            indices = np.arange(chunk_data.shape[0])
+            indices = np.arange(arrays[0].shape[0])
             np.random.shuffle(indices)
             for i in indices:
-                yield torch.from_numpy(chunk_data[i]).reshape(self.n_var, -1).T.float()
+                yield Batch(data_vars={
+                    var_name: torch.from_numpy(arrays[v_idx][i]).reshape(-1, 1).float()
+                    for v_idx, var_name in enumerate(self.variables)
+                })
 
     def __len__(self) -> int:
         return self.end_idx - self.start_idx

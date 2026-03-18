@@ -1,0 +1,8 @@
+name: "era5_standard"
+variables:
+  t2m:
+    mean: 278.25702
+    std: 21.42081
+  z500:
+    mean: 54085.59
+    std: 3360.528
