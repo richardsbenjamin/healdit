@@ -66,7 +66,7 @@ class HEALEncoder(nn.Module):
     
     def __init__(
             self,
-            rec: int,
+            rec: Location,
             send: Location,
             edge_in: int,
             edge_out: int,
@@ -86,8 +86,8 @@ class HEALEncoder(nn.Module):
             out_dim=lin_out,
         )
 
-    def _init_edge_details(self, rec: int, send: int) -> None:
-        edge_index, edge_attr = get_encoder_edge_details(rec=2 ** rec, send=2 ** send)
+    def _init_edge_details(self, rec: Location, send: Location) -> None:
+        edge_index, edge_attr = get_encoder_edge_details(rec=rec, send=send)
         self.register_buffer("edge_index", edge_index)
         self.register_buffer("edge_attr", edge_attr)
 
