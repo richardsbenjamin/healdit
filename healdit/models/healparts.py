@@ -66,16 +66,14 @@ class HEALEncoder(nn.Module):
     def __init__(
             self,
             rec: int,
-            send: "Location",
+            send: Location,
             edge_in: int,
             edge_out: int,
             lin_in: int,
             lin_out: int,
         ) -> None:
         super().__init__()
-        edge_index, edge_attr = get_encoder_edge_details(rec=rec, send=send)
-        self.register_buffer("edge_index", edge_index)
-        self.register_buffer("edge_attr", edge_attr)
+        self._init_edge_details(rec, send)
         self.edge_embedder = MLP(
             in_dim=edge_in,
             hidden_dim=edge_out,
@@ -86,6 +84,11 @@ class HEALEncoder(nn.Module):
             hidden_dim=lin_out,
             out_dim=lin_out,
         )
+
+    def _init_edge_details(self, rec: int, send: int) -> None:
+        edge_index, edge_attr = get_encoder_edge_details(rec=rec, send=send)
+        self.register_buffer("edge_index", edge_index)
+        self.register_buffer("edge_attr", edge_attr)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         edge_attr = self.edge_attr.unsqueeze(0).expand(x.size(0), -1, -1)
@@ -101,7 +104,7 @@ class HEALDecoder(nn.Module):
 
     def __init__(
             self,
-            rec: "Location",
+            rec: Location,
             send: int,
             embed_in: int, 
             embed_out: int,
@@ -111,11 +114,9 @@ class HEALDecoder(nn.Module):
             dtype=torch.float32
         ) -> None:
         super().__init__()
-        edge_index, edge_attr = get_decoder_edge_details(
-            n_out=send, n_edge_closest=n_edge_closest, lat_flat=rec[1], lon_flat=rec[0], dtype=dtype
-        )
-        self.register_buffer("edge_index", edge_index)
-        self.register_buffer("edge_attr", edge_attr)
+        self.n_edge_closest = n_edge_closest
+        self.dtype = dtype
+        self._init_edge_details(rec, send)
         self.edge_embedder = MLP(
             in_dim=embed_in,
             hidden_dim=embed_out,
@@ -126,6 +127,13 @@ class HEALDecoder(nn.Module):
             hidden_dim=lin_out,
             out_dim=lin_out,
         )
+
+    def _init_edge_details(self, rec: int, send: int) -> None:
+        edge_index, edge_attr = get_decoder_edge_details(
+            n_out=send, n_edge_closest=self.n_edge_closest, lat_flat=rec[1], lon_flat=rec[0], dtype=self.dtype
+        )
+        self.register_buffer("edge_index", edge_index)
+        self.register_buffer("edge_attr", edge_attr)
 
     def forward(self, x):
         edge_features = self.edge_embedder(self.edge_attr)
@@ -152,15 +160,7 @@ class HEALDownSampler(nn.Module):
             dtype=torch.float32
         ) -> None:
         super().__init__()
-        npix_send = hp.nside2npix(send)
-        npix_rec = hp.nside2npix(rec)
-        edge_attr = torch.tensor(
-            np.arange(npix_send) % (npix_send // npix_rec),
-            dtype=torch.float32
-        ).reshape(-1, 1)
-        edge_index = get_edge_index(nside_in=send, nside_out=rec)
-        self.register_buffer("edge_index", edge_index)
-        self.register_buffer("edge_attr", edge_attr)
+        self._init_edge_details(rec, send)
         self.edge_embedder = MLP(
             in_dim=embed_in,
             hidden_dim=embed_out,
@@ -171,6 +171,17 @@ class HEALDownSampler(nn.Module):
             hidden_dim=lin_out,
             out_dim=lin_out,
         )
+
+    def _init_edge_details(self, rec: int, send: int) -> None:
+        npix_send = hp.nside2npix(send)
+        npix_rec = hp.nside2npix(rec)
+        edge_attr = torch.tensor(
+            np.arange(npix_send) % (npix_send // npix_rec),
+            dtype=torch.float32
+        ).reshape(-1, 1)
+        edge_index = get_edge_index(send=send, rec=rec)
+        self.register_buffer("edge_index", edge_index)
+        self.register_buffer("edge_attr", edge_attr)
 
     def forward(self, x):
         edge_features = self.edge_embedder(self.edge_attr)
@@ -196,12 +207,7 @@ class HEALUpSampler(nn.Module):
             dtype=torch.float32
         ) -> None:
         super().__init__()
-        healpix_send = HEALPix(n=int(np.log2(send)))
-        healpix_rec = HEALPix(n=int(np.log2(rec)))
-        edge_attr = (torch.arange(hp.nside2npix(rec) * n_edge_closest).to(dtype) % n_edge_closest).reshape(-1, 1)
-        edge_index = healpix_send.get_edge_index_by_knn(healpix_rec, n_edge_closest)
-        self.register_buffer("edge_index", edge_index)
-        self.register_buffer("edge_attr", edge_attr)
+        self._init_edge_details(rec, send)
         self.edge_embedder = MLP(
             in_dim=embed_in,
             hidden_dim=embed_out,
@@ -212,6 +218,14 @@ class HEALUpSampler(nn.Module):
             hidden_dim=lin_out,
             out_dim=lin_out,
         )
+
+    def _init_edge_details(self, rec: int, send: int) -> None:
+        healpix_send = HEALPix(n=int(np.log2(send)))
+        healpix_rec = HEALPix(n=int(np.log2(rec)))
+        edge_attr = (torch.arange(hp.nside2npix(rec) * n_edge_closest).to(dtype) % n_edge_closest).reshape(-1, 1)
+        edge_index = healpix_send.get_edge_index_by_knn(healpix_rec, n_edge_closest)
+        self.register_buffer("edge_index", edge_index)
+        self.register_buffer("edge_attr", edge_attr)
 
     def forward(self, x):
         edge_features = self.edge_embedder(self.edge_attr)
