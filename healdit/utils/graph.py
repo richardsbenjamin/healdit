@@ -16,10 +16,12 @@ from healdit.utils.geo import (
 from healdit.utils.heal import get_neighbours_all
 
 if TYPE_CHECKING:
-    from typing import Optional
+    from typing import Optional, Tuple, Union
 
     from numpy import ndarray
     from torch import Tensor
+
+    from healdit._typing import Location
 
 
 def _edge_features(relative_pos: ndarray) -> ndarray:
@@ -33,51 +35,54 @@ def _edge_features(relative_pos: ndarray) -> ndarray:
     
     return features
 
+def _resolve_coords(input_val: Location) -> Tuple[ndarray]:
+    if isinstance(input_val, int):
+        return get_mesh_lon_lat(input_val)
+    return input_val
+
 def get_edge_index(
-        *,
-        nside_in: Optional[int] = None,
-        nside_out: Optional[int] = None,
-        lon_flat: Optional[ndarray] = None,
-        lat_flat: Optional[ndarray] = None,
+        send: Location,
+        rec: Location,
     ) -> Tensor:
-    if nside_in is not None and nside_out is not None:
-        if nside_in >= nside_out:
-            mesh_in = np.arange(hp.nside2npix(nside_in))
-            mesh_out = np.sort(mesh_in % hp.nside2npix(nside_out))
+    if isinstance(send, int) and isinstance(rec, int):
+        if send >= rec:
+            mesh_in = np.arange(hp.nside2npix(send))
+            mesh_out = np.sort(mesh_in % hp.nside2npix(rec))
         else:
-            mesh_out = np.arange(hp.nside2npix(nside_out))
-            mesh_in = np.sort(mesh_out % hp.nside2npix(nside_in))
-    elif nside_in is not None and lon_flat is not None:
-        mesh_in = np.arange(len(lon_flat))
-        mesh_out = hpg.angle_to_pixel(nside_in, lon_flat, lat_flat)
-    elif nside_out is not None and lon_flat is not None:
-        mesh_in = hpg.angle_to_pixel(nside_out, lon_flat, lat_flat)
-        mesh_out = np.arange(len(lon_flat))
-       
-    return torch.from_numpy(
-        np.stack([mesh_in, mesh_out], axis=0)
-    )
+            mesh_out = np.arange(hp.nside2npix(rec))
+            mesh_in = np.sort(mesh_out % hp.nside2npix(send))
+
+    elif isinstance(send, tuple) and isinstance(rec, int):
+        lon, lat = send
+        mesh_in = np.arange(len(lon))
+        mesh_out = hpg.angle_to_pixel(rec, lon, lat)
+
+    elif isinstance(send, int) and isinstance(rec, tuple):
+        lon, lat = rec
+        mesh_in = hpg.angle_to_pixel(send, lon, lat)
+        mesh_out = np.arange(len(lon))
+    else:
+        raise ValueError(
+            f"Unsupported mapping: {type(send)} to {type(rec)}. "
+            "Both cannot be coordinates."
+        )
+
+    return torch.from_numpy(np.stack([mesh_in, mesh_out], axis=0))
 
 def get_edge_features(
         edge_index: np.ndarray,
-        rec: int | Tuple[np.ndarray],
-        send: int | Tuple[np.ndarray],
+        rec: Location,
+        send: Location,
     ) -> np.ndarray:
-    if isinstance(rec, int):
-        r_lon_flat, r_lat_flat = get_mesh_lon_lat(rec)
-    elif instance(rec, tuple):
-        r_lon_flat, r_lat_flat = rec[0], rec[1]
-    if isinstance(send, int):
-        s_lon_flat, s_lat_flat = get_mesh_lon_lat(send)
-    elif isinstance(send, tuple):
-        s_lon_flat, s_lat_flat = send[0], send[1]
-
-    senders, receivers = edge_index[0, :], edge_index[1, :]
+    r_lon, r_lat = _resolve_coords(rec)
+    s_lon, s_lat = _resolve_coords(send)
     
-    s_pos, _, _ = get_node_positions(s_lat_flat, s_lon_flat)
-    r_pos, r_phi, r_theta = get_node_positions(r_lat_flat, r_lon_flat)
+    s_pos, _, _ = get_node_positions(s_lat, s_lon)
+    r_pos, r_phi, r_theta = get_node_positions(r_lat, r_lon)
 
     rot_matrices = get_rotation_matrices(r_phi, r_theta)
+
+    senders, receivers = edge_index[0, :], edge_index[1, :]
 
     relative_pos = get_relative_space(senders, receivers, s_pos, r_pos, rot_matrices)
 

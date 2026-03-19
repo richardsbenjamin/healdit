@@ -60,7 +60,6 @@ class HEALVAEEncoderBlock(nn.Module):
         self.healpix = healpix
         self.depth = depth 
         self._set_res_block_edge_details()
-        self._set_downsampler_edge_details()
 
         self.edge_embedder = MLP(
             in_dim=edge_feat_dim,
@@ -74,23 +73,15 @@ class HEALVAEEncoderBlock(nn.Module):
                 ResBlock(node_feat_dim, node_hidden_dim, edge_embed_dim)
             )
         self.downsample = nn.Identity() if not downsample else HEALDownSampler(
-            edge_index=self.down_edge_index,
-            edge_attr=self.down_edge_attr,
+            rec=self.healpix.nside // 2,
+            send=self.healpix.nside,
             embed_in=1,
             embed_out=edge_embed_dim,
             lin_in=node_feat_dim+edge_embed_dim,
             lin_out=node_feat_dim*2,
         )
 
-    def _set_downsampler_edge_details(self) -> None:
-        healpix_down = HEALPix(self.healpix.n - 1)
-        edge_attr = torch.tensor(
-            np.arange(self.healpix.npix) % (self.healpix.npix // healpix_down.npix),
-            dtype=torch.float32
-        ).reshape(-1, 1)
-        edge_index = get_edge_index(nside_in=self.healpix.nside, nside_out=healpix_down.nside)
-        self.register_buffer("down_edge_index", edge_index)
-        self.register_buffer("down_edge_attr", edge_attr)
+
 
     def _set_res_block_edge_details(self) -> None:
         edge_index = get_mesh_to_mesh_edge_index(nside=self.healpix.nside)

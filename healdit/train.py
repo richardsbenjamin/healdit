@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 import torch
 import torch.nn as nn
-from hydra.utils import instantiate
 
 if TYPE_CHECKING:
     from typing import Dict, List, Optional, Any, Union
@@ -105,10 +104,10 @@ def vae_loss(
     
     kl_per_level = {}
     rpp = torch.zeros_like(rl)
-    n = x.values.shape[1:]
+    scale = np.prod(x.values.shape[1:])
     for n, kl_list in decoder_kl.items():
         level_sum = torch.stack([k.sum(dim=list(range(1, k.dim()))) for k in kl_list]).sum(dim=0)
-        level_sum /= np.prod(n)
+        level_sum /= scale
         rpp += level_sum
         kl_per_level[n] = level_sum.mean().item()
         

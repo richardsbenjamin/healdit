@@ -10,8 +10,6 @@ from healdit.batch import Batch
 from healdit.models.healparts import (
     HEALEncoder,
     HEALDecoder,
-    get_encoder_edge_details,
-    get_decoder_edge_details,
 )
 from healdit.models.healvaeencoder import HEALVAEEncoder
 from healdit.models.healvaedecoder import HEALVAEDecoder
@@ -34,11 +32,11 @@ class HEALVAE(nn.Module):
         # TO DO: validation checks e.g. if starting_n with # of depths makes sense
         self.config = config
         self.normalisation = config.normalisation["variables"]
-        self._set_encoder_decoder_edge_details()
-
+        lat_flat, lon_flat = get_lat_lon_flat_grid(*self.config.lat_lon_res)
+        
         self.heal_encoder = HEALEncoder(
-            edge_index=self.enc_edge_index,
-            edge_attr=self.enc_edge_attr,
+            rec=2 ** config.starting_n,
+            send=(lon_flat, lat_flat),
             edge_in=config.input_feat_dim+config.edge_feat_dim,
             edge_out=config.edge_embed_dim,
             lin_in=config.edge_embed_dim,
@@ -60,24 +58,16 @@ class HEALVAE(nn.Module):
             z_dim=config.z_dim,
         )
         self.heal_decoder = HEALDecoder(
-            edge_index=self.dec_edge_index,
-            edge_attr=self.dec_edge_attr,
+            rec=(lon_flat, lat_flat),
+            send=2 ** config.starting_n,
+            n_edge_closest=config.n_edge_closest,
             embed_in=1,
             embed_out=config.edge_embed_dim,
             lin_in=config.node_feat_dim + config.edge_embed_dim,
             lin_out=config.output_feat_dim,
         )
 
-    def _set_encoder_decoder_edge_details(self) -> None:
-        lat_flat, lon_flat = get_lat_lon_flat_grid(*self.config.lat_lon_res)
-        enc_edge_index, enc_edge_attr = get_encoder_edge_details(2 ** self.config.starting_n, lat_flat, lon_flat)
-        dec_edge_index, dec_edge_attr = get_decoder_edge_details(
-            self.config.starting_n, self.config.n_edge_closest, lat_flat, lon_flat,
-        )
-        self.register_buffer("enc_edge_index", enc_edge_index)
-        self.register_buffer("enc_edge_attr", enc_edge_attr)
-        self.register_buffer("dec_edge_index", dec_edge_index)
-        self.register_buffer("dec_edge_attr", dec_edge_attr)
+
 
     def forward(self, x: Batch) -> Tuple[Batch, List[torch.Tensor]]:
         var_names = list(x.data_vars.keys())

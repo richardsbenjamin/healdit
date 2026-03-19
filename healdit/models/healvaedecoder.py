@@ -140,7 +140,6 @@ class HEALVAEDecoderBlock(nn.Module):
         self.healpix = healpix
         self.n_edge_closest = n_edge_closest
         self._set_top_down_block_edge_details()
-        self._set_upsampler_edge_details()
         self.blocks = nn.ModuleList()
         for i in range(depth):
             self.blocks.append(
@@ -157,8 +156,9 @@ class HEALVAEDecoderBlock(nn.Module):
             out_dim=edge_embed_dim,
         )
         self.upsample = nn.Identity() if not upsample else HEALUpSampler(
-            edge_index=self.up_edge_index,
-            edge_attr=self.up_edge_attr,
+            rec=self.healpix.nside,
+            send=self.healpix.nside // 2,
+            n_edge_closest=self.n_edge_closest,
             embed_in=1,
             embed_out=edge_embed_dim,
             lin_in=(2*node_feat_dim)+edge_embed_dim,
@@ -173,13 +173,6 @@ class HEALVAEDecoderBlock(nn.Module):
         )
         self.register_buffer("top_down_edge_index", edge_index)
         self.register_buffer("top_down_edge_attr", edge_attr)
-
-    def _set_upsampler_edge_details(self) -> None:
-        healpix_down = HEALPix(n=self.healpix.n-1)
-        edge_attr = (torch.arange(self.healpix.npix * self.n_edge_closest).to(torch.float32) % 4).reshape(-1, 1)
-        edge_index = healpix_down.get_edge_index_by_knn(self.healpix, self.n_edge_closest)
-        self.register_buffer("up_edge_index", edge_index)
-        self.register_buffer("up_edge_attr", edge_attr)
 
     def forward(self, x: torch.Tensor, a: torch.Tensor) -> torch.Tensor:
         edge_features = self.edge_embedder(self.top_down_edge_attr)
