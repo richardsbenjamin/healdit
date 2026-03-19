@@ -83,6 +83,17 @@ def get_edge_features(
         rec: Location,
         send: Location,
     ) -> np.ndarray:
+    """Get the edge features for a HEALPix grid.
+    
+    Args:
+        edge_index: The edge index.
+        rec: Nside or (lon, lat) of receiving HEALPix grid.
+        send: Nside or (lon, lat) of sending HEALPix grid.
+    
+    Returns:
+        A tensor containing the edge features.
+        
+    """
     r_lon, r_lat = _resolve_coords(rec)
     s_lon, s_lat = _resolve_coords(send)
     

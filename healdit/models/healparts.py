@@ -39,6 +39,7 @@ def get_encoder_edge_details(
 
     Returns:
         A tuple containing the edge index and edge attributes.
+
     """
     edge_index = get_edge_index(send=send, rec=rec)
     edge_attr = torch.tensor(
@@ -86,7 +87,7 @@ class HEALEncoder(nn.Module):
         )
 
     def _init_edge_details(self, rec: int, send: int) -> None:
-        edge_index, edge_attr = get_encoder_edge_details(rec=2 ** rec, send=send)
+        edge_index, edge_attr = get_encoder_edge_details(rec=2 ** rec, send=2 ** send)
         self.register_buffer("edge_index", edge_index)
         self.register_buffer("edge_attr", edge_attr)
 
