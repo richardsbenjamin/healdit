@@ -44,6 +44,15 @@ def get_edge_index(
         send: Location,
         rec: Location,
     ) -> Tensor:
+    """Get the edge index for a HEALPix grid.
+    
+    Args:
+        send: Nside or (lon, lat) of sending HEALPix grid.
+        rec: Nside or (lon, lat) of receiving HEALPix grid.
+    
+    Returns:
+        A tensor containing the edge index.
+    """
     if isinstance(send, int) and isinstance(rec, int):
         if send >= rec:
             mesh_in = np.arange(hp.nside2npix(send))

@@ -86,7 +86,7 @@ class HEALEncoder(nn.Module):
         )
 
     def _init_edge_details(self, rec: int, send: int) -> None:
-        edge_index, edge_attr = get_encoder_edge_details(rec=rec, send=send)
+        edge_index, edge_attr = get_encoder_edge_details(rec=2 ** rec, send=send)
         self.register_buffer("edge_index", edge_index)
         self.register_buffer("edge_attr", edge_attr)
 
@@ -173,13 +173,13 @@ class HEALDownSampler(nn.Module):
         )
 
     def _init_edge_details(self, rec: int, send: int) -> None:
-        npix_send = hp.nside2npix(send)
-        npix_rec = hp.nside2npix(rec)
+        npix_send = hp.nside2npix(2 ** send)
+        npix_rec = hp.nside2npix(2 ** rec)
         edge_attr = torch.tensor(
             np.arange(npix_send) % (npix_send // npix_rec),
             dtype=torch.float32
         ).reshape(-1, 1)
-        edge_index = get_edge_index(send=send, rec=rec)
+        edge_index = get_edge_index(send=2 ** send, rec=2 ** rec)
         self.register_buffer("edge_index", edge_index)
         self.register_buffer("edge_attr", edge_attr)
 
@@ -207,6 +207,8 @@ class HEALUpSampler(nn.Module):
             dtype=torch.float32
         ) -> None:
         super().__init__()
+        self.n_edge_closest = n_edge_closest
+        self.dtype = dtype
         self._init_edge_details(rec, send)
         self.edge_embedder = MLP(
             in_dim=embed_in,
@@ -220,10 +222,10 @@ class HEALUpSampler(nn.Module):
         )
 
     def _init_edge_details(self, rec: int, send: int) -> None:
-        healpix_send = HEALPix(n=int(np.log2(send)))
-        healpix_rec = HEALPix(n=int(np.log2(rec)))
-        edge_attr = (torch.arange(hp.nside2npix(rec) * n_edge_closest).to(dtype) % n_edge_closest).reshape(-1, 1)
-        edge_index = healpix_send.get_edge_index_by_knn(healpix_rec, n_edge_closest)
+        healpix_send = HEALPix(n=send)
+        healpix_rec = HEALPix(n=rec)
+        edge_attr = (torch.arange(hp.nside2npix(2 ** rec) * self.n_edge_closest).to(self.dtype) % self.n_edge_closest).reshape(-1, 1)
+        edge_index = healpix_send.get_edge_index_by_knn(healpix_rec, self.n_edge_closest)
         self.register_buffer("edge_index", edge_index)
         self.register_buffer("edge_attr", edge_attr)
 

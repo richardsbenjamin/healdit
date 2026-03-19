@@ -49,6 +49,10 @@ class Batch:
         )
 
     @property
+    def shape(self) -> Tuple[int, ...]:
+        return self.values.shape
+
+    @property
     def values(self) -> torch.Tensor:
         return torch.concat(list(self.data_vars.values()), dim=-1)
 
