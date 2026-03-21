@@ -57,7 +57,10 @@ from healdit.batch import Batch
 from healdit.utils.geo import get_lat_lon_flat_grid
 import torch.nn as nn
 import torch
-from healdit.models.healparts import HEALDecoder, HEALEncoder, HEALDownSampler, HEALUpSampler
+from healdit.models.heal import HEALPix
+from healdit.models.healparts import HEALDecoder, HEALEncoder
+from healdit.models.healvaedecoder2 import HEALVAEDecoder2
+from healdit.models.healvaeencoder import HEALVAEEncoder
 
 from typing import Tuple, List
 
@@ -89,20 +92,13 @@ class UpDown(nn.Module):
             lin_in=config.edge_embed_dim,
             lin_out=config.node_feat_dim,
         )
-        self.encoders = nn.Sequential()
-        for i, depth in enumerate(config.depths):
-            nfd = config.node_feat_dim * (2 ** i)
-            self.encoders.append(
-                HEALDownSampler(
-                    rec=2 ** (config.starting_n - i - 1),
-                    send=2 ** (config.starting_n - i),
-                    edge_in=config.edge_feat_dim,
-                    edge_out=nfd, #config.edge_embed_dim,
-                    lin_in=nfd+nfd, #+config.edge_embed_dim,
-                    lin_out=2*nfd,
-
-                )
-            )
+        self.encoders = HEALVAEEncoder(
+            starting_n=config.starting_n,
+            depths=config.depths,
+            node_feat_dim=config.node_feat_dim,
+            edge_feat_dim=config.edge_feat_dim,
+            edge_embed_dim=config.edge_embed_dim,
+        )
 
         self.heal_decoder = HEALDecoder(
             rec=(lon_flat, lat_flat),
@@ -114,22 +110,15 @@ class UpDown(nn.Module):
         )
 
         last_node_dim = config.node_feat_dim * (2 ** (len(config.depths) - 1))
-        last_n = config.starting_n - len(config.depths)
+        last_n = config.starting_n - len(config.depths) + 1
 
-        self.decoders = nn.Sequential()
-        for i, depth in enumerate(config.depths):
-            nfd = int(last_node_dim * (1 / (2 ** i)))
-            self.decoders.append(
-                HEALUpSampler(
-                    rec=2 ** (last_n + i + 1),
-                    send=2 ** (last_n + i),
-                    n_edge_closest=config.n_edge_closest,
-                    embed_in=config.edge_feat_dim,
-                    embed_out=2*nfd,
-                    lin_in=2*nfd+2*nfd, #+config.edge_embed_dim,
-                    lin_out=nfd,
-                )
-            )
+        self.decoders = HEALVAEDecoder2(
+            starting_n=last_n,
+            depths=config.depths,
+            node_feat_dim=last_node_dim,
+            edge_feat_dim=config.edge_feat_dim,
+            edge_embed_dim=config.edge_embed_dim,
+        )
 
     def forward(self, x: Batch) -> Tuple[Batch, List[torch.Tensor]]:
         var_names = list(x.data_vars.keys())
@@ -189,6 +178,9 @@ if __name__ == "__main__":
 
     cfg = load_config(args.config_name, overrides=comma_list_to_list(args.overrides))
     healvae_cfg = instantiate(cfg.healvae)
+    healvae_cfg.depths = [1]
+    healvae_cfg.starting_n = 6
+    
     train_params = instantiate(cfg.trainparams)
     paths = instantiate(cfg.paths)
 

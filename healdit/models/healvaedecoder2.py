@@ -7,16 +7,18 @@ import torch
 import torch.nn as nn
 
 from healdit.models.heal import HEALPix
-from healdit.models.healparts import HEALDownSampler
-from healdit.models.parts import FeedForward, MessagePassing, MLP
+from healdit.models.healparts import HEALUpSampler
+from healdit.models.healvaeencoder import ResBlock
+from healdit.models.parts import MessagePassing, MLP
 from healdit.utils.graph import (
     get_edge_features,
-    get_edge_index,
     get_mesh_to_mesh_edge_index,
 )
 
 if TYPE_CHECKING:
-    from typing import Tuple
+    from typing import List, Tuple
+
+    from torch import Tensor
 
 
 class ResBlock(nn.Module):
@@ -44,7 +46,7 @@ class ResBlock(nn.Module):
         return residual + self.feed_forward2(x)
 
 
-class HEALVAEEncoderBlock(nn.Module):
+class HEALVAEDecoderBlock(nn.Module):
 
     def __init__(
             self,
@@ -54,7 +56,7 @@ class HEALVAEEncoderBlock(nn.Module):
             node_hidden_dim: int,
             edge_feat_dim: int,
             edge_embed_dim: int,
-            downsample: bool,       
+            upsample: bool,       
         ) -> None:
         super().__init__()
         self.healpix = healpix
@@ -72,10 +74,11 @@ class HEALVAEEncoderBlock(nn.Module):
             self.blocks.append(
                 ResBlock(node_feat_dim, node_hidden_dim, edge_embed_dim)
             )
-        self.downsample = nn.Identity() if not downsample else HEALDownSampler(
-            rec=self.healpix.nside // 2,
+        self.upsample = nn.Identity() if not upsample else HEALUpSampler(
+            rec=self.healpix.nside * 2,
             send=self.healpix.nside,
-            embed_in=config.edge_embed_dim,
+            embed_in=1,
+            n_edge_closest=4,
             embed_out=edge_embed_dim,
             lin_in=node_feat_dim+edge_embed_dim,
             lin_out=node_feat_dim*2,
@@ -92,40 +95,42 @@ class HEALVAEEncoderBlock(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         edge_features = self.edge_embedder(self.res_edge_attr)
+        x = self.upsample(x)
         for i, block in enumerate(self.blocks):
             x = block(x, self.res_edge_index, edge_features)
-        return x, self.downsample(x)
+        return x
 
 
-class HEALVAEEncoder(nn.Module):
+class HEALVAEDecoder2(nn.Module):
 
     def __init__(
             self,
             starting_n: int,
-            depths: Tuple[int, ...],
+            depths: Tuple[int],
             node_feat_dim: int,
             edge_feat_dim: int,
             edge_embed_dim: int,
+            n_edge_closest: int = 4,
         ) -> None:
         super().__init__()
         self.layers = nn.ModuleList()
         for i, depth in enumerate(depths):
             self.layers.append(
-                HEALVAEEncoderBlock(
-                    healpix=HEALPix(n=starting_n - i),
+                HEALVAEDecoderBlock(
+                    healpix=HEALPix(n=starting_n + i),
                     depth=depth,
-                    node_feat_dim=node_feat_dim * (2 ** i),
-                    node_hidden_dim=node_feat_dim * (2 ** i),
+                    node_feat_dim=int(node_feat_dim * (1 / (2 ** i))),
+                    node_hidden_dim=int(node_feat_dim * (1 / (2 ** i))),
                     edge_feat_dim=edge_feat_dim,
                     edge_embed_dim=edge_embed_dim,
-                    downsample=i != len(depths) - 1,
+                    upsample=i != 0,
                 )
             )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        activations = []
-        for layer in self.layers:
-            activation, x = layer(x)
-            activations.append(activation)
-        return activations
+    def forward(self, activations: torch.Tensor) -> Tuple[torch.Tensor, Dict[int, List[torch.Tensor]]]:
+        activations = activations[::-1]
+        x = activations[0]
+        for layer in self.layers: 
+            x = layer(x)
+        return x
 
