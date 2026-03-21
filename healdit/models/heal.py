@@ -14,9 +14,11 @@ if TYPE_CHECKING:
 
 class HEALPix:
 
-    def __init__(self, n: int) -> None:
-        self.n = n
-        self.nside = 2 ** n
+    def __init__(self, *, n: Optional[int] = None, nside: Optional[int] = None) -> None:
+        if n is None and nside is None:
+            raise ValueError("Either n or nside must be provided.")
+        self.n = n or int(np.log2(nside))
+        self.nside = nside or 2 ** n
         self.npix = hp.nside2npix(self.nside)
 
     def get_edge_index_by_knn(
