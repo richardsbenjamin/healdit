@@ -75,7 +75,7 @@ class HEALVAEEncoderBlock(nn.Module):
         self.downsample = nn.Identity() if not downsample else HEALDownSampler(
             rec=self.healpix.nside // 2,
             send=self.healpix.nside,
-            embed_in=config.edge_embed_dim,
+            embed_in=edge_feat_dim,
             embed_out=edge_embed_dim,
             lin_in=node_feat_dim+edge_embed_dim,
             lin_out=node_feat_dim*2,
