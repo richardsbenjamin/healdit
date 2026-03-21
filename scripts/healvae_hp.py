@@ -97,8 +97,8 @@ class UpDown(nn.Module):
                     rec=2 ** (config.starting_n - i - 1),
                     send=2 ** (config.starting_n - i),
                     edge_in=config.edge_feat_dim,
-                    edge_out=config.edge_embed_dim,
-                    lin_in=nfd+config.edge_embed_dim,
+                    edge_out=nfd, #config.edge_embed_dim,
+                    lin_in=nfd+nfd, #+config.edge_embed_dim,
                     lin_out=2*nfd,
 
                 )
@@ -106,8 +106,8 @@ class UpDown(nn.Module):
 
         self.heal_decoder = HEALDecoder(
             rec=(lon_flat, lat_flat),
-            send=config.starting_n,
-            embed_in=1,
+            send=2**config.starting_n,
+            embed_in=config.edge_feat_dim,
             embed_out=config.edge_embed_dim,
             lin_in=config.node_feat_dim + config.edge_embed_dim,
             lin_out=config.output_feat_dim,
@@ -125,8 +125,8 @@ class UpDown(nn.Module):
                     send=2 ** (last_n + i),
                     n_edge_closest=config.n_edge_closest,
                     embed_in=config.edge_feat_dim,
-                    embed_out=config.edge_embed_dim,
-                    lin_in=2*nfd+config.edge_embed_dim,
+                    embed_out=2*nfd,
+                    lin_in=2*nfd+2*nfd, #+config.edge_embed_dim,
                     lin_out=nfd,
                 )
             )
