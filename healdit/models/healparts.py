@@ -96,10 +96,6 @@ class HEALEncoder(nn.Module):
         edge_attr = self.edge_attr.unsqueeze(0).expand(x.size(0), -1, -1)
         v_g_prime = torch.cat([edge_attr, x], dim=-1)
 
-        print(v_g_prime.shape)
-        print(edge_attr.shape)
-        print(x.shape)
-
         v_g = self.edge_embedder(v_g_prime)
         v_m_sum = scatter_sum(v_g, self.edge_index[1], dim=1)
 

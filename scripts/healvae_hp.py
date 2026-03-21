@@ -61,6 +61,14 @@ from healdit.models.healparts import HEALDecoder, HEALEncoder, HEALDownSampler, 
 
 from typing import Tuple, List
 
+from healdit.batch import Batch
+from healdit.utils.geo import get_lat_lon_flat_grid
+import torch.nn as nn
+import torch
+from healdit.models.healparts import HEALDecoder, HEALEncoder, HEALDownSampler, HEALUpSampler
+
+from typing import Tuple, List
+
 class UpDown(nn.Module):
 
     def __init__(
@@ -91,7 +99,7 @@ class UpDown(nn.Module):
                     edge_in=nfd+config.edge_feat_dim,
                     edge_out=config.edge_embed_dim,
                     lin_in=config.edge_embed_dim,
-                    lin_out=nfd ** 2,
+                    lin_out=2*nfd,
 
                 )
             )
@@ -101,7 +109,7 @@ class UpDown(nn.Module):
             send=config.starting_n,
             embed_in=1,
             embed_out=config.edge_embed_dim,
-            lin_in=config.node_feat_dim + config.edge_embed_dim,
+            lin_in=2*config.node_feat_dim + config.edge_embed_dim,
             lin_out=config.output_feat_dim,
         )
 
@@ -118,23 +126,18 @@ class UpDown(nn.Module):
                     n_edge_closest=config.n_edge_closest,
                     embed_in=1,
                     embed_out=config.edge_embed_dim,
-                    lin_in=nfd+config.edge_embed_dim,
-                    lin_out=nfd,
+                    lin_in=2*nfd+config.edge_embed_dim,
+                    lin_out=2*nfd,
                 )
             )
 
     def forward(self, x: Batch) -> Tuple[Batch, List[torch.Tensor]]:
         var_names = list(x.data_vars.keys())
 
-        print('X IN', x.shape)
         x = self.heal_encoder(x.values)
-        print('X HEAL ENCODER', x.shape)
         x = self.encoders(x)
-        print('X ENCODERS', x.shape)
         x = self.decoders(x)
-        print('X DECODERS', x.shape)
         x = self.heal_decoder(x)
-        print('X HEAL DECODER', x.shape)
 
         x = Batch(data_vars=dict(zip(var_names, x.split(1, dim=-1))))
 
@@ -208,4 +211,3 @@ if __name__ == "__main__":
     x = next(iter(train_dataloader))
     y = heal_vae(x)
     
-    print(x.shape, y.shape)
