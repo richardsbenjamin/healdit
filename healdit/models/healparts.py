@@ -155,8 +155,8 @@ class HEALDownSampler(nn.Module):
             self,
             rec: int,
             send: int,
-            embed_in: int, 
-            embed_out: int,
+            edge_in: int, 
+            edge_out: int,
             lin_in: int,
             lin_out: int,
             dtype=torch.float32
@@ -164,9 +164,9 @@ class HEALDownSampler(nn.Module):
         super().__init__()
         self._init_edge_details(rec, send)
         self.edge_embedder = MLP(
-            in_dim=embed_in,
-            hidden_dim=embed_out,
-            out_dim=embed_out,
+            in_dim=edge_in,
+            hidden_dim=edge_out,
+            out_dim=edge_out,
         )
         self.linear = FeedForward(
             in_dim=lin_in,
