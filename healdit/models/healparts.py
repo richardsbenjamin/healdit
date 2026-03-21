@@ -175,13 +175,18 @@ class HEALDownSampler(nn.Module):
         )
 
     def _init_edge_details(self, rec: int, send: int) -> None:
-        npix_send = hp.nside2npix(2 ** send)
-        npix_rec = hp.nside2npix(2 ** rec)
-        edge_attr = torch.tensor(
-            np.arange(npix_send) % (npix_send // npix_rec),
-            dtype=torch.float32
-        ).reshape(-1, 1)
+        # npix_send = hp.nside2npix(2 ** send)
+        # npix_rec = hp.nside2npix(2 ** rec)
+        # edge_attr = torch.tensor(
+        #     np.arange(npix_send) % (npix_send // npix_rec),
+        #     dtype=torch.float32
+        # ).reshape(-1, 1)
+
         edge_index = get_edge_index(send=2 ** send, rec=2 ** rec)
+        edge_attr = torch.tensor(
+            get_edge_features(edge_index.numpy(), send=2 ** send, rec=2 ** rec),
+            dtype=dtype,
+        )
         self.register_buffer("edge_index", edge_index)
         self.register_buffer("edge_attr", edge_attr)
 
@@ -226,8 +231,12 @@ class HEALUpSampler(nn.Module):
     def _init_edge_details(self, rec: int, send: int) -> None:
         healpix_send = HEALPix(n=send)
         healpix_rec = HEALPix(n=rec)
-        edge_attr = (torch.arange(hp.nside2npix(2 ** rec) * self.n_edge_closest).to(self.dtype) % self.n_edge_closest).reshape(-1, 1)
+        # edge_attr = (torch.arange(hp.nside2npix(2 ** rec) * self.n_edge_closest).to(self.dtype) % self.n_edge_closest).reshape(-1, 1)
         edge_index = healpix_send.get_edge_index_by_knn(healpix_rec, self.n_edge_closest)
+        edge_attr = torch.tensor(
+            get_edge_features(edge_index.numpy(), send=2 ** send, rec=2 ** rec),
+            dtype=self.dtype,
+        )
         self.register_buffer("edge_index", edge_index)
         self.register_buffer("edge_attr", edge_attr)
 
