@@ -159,9 +159,10 @@ class HEALDownSampler(nn.Module):
             edge_out: int,
             lin_in: int,
             lin_out: int,
-            dtype=torch.float32
+            dtype: torch.dtype = torch.float32,
         ) -> None:
         super().__init__()
+        self.dtype = dtype
         self._init_edge_details(rec, send)
         self.edge_embedder = MLP(
             in_dim=edge_in,
@@ -211,7 +212,7 @@ class HEALUpSampler(nn.Module):
             lin_in: int,
             lin_out: int,
             n_edge_closest: int = 4,
-            dtype=torch.float32
+            dtype: torch.dtype = torch.float32,
         ) -> None:
         super().__init__()
         self.n_edge_closest = n_edge_closest
