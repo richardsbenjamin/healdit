@@ -93,12 +93,12 @@ class UpDown(nn.Module):
         for i, depth in enumerate(config.depths):
             nfd = config.node_feat_dim * (2 ** i)
             self.encoders.append(
-                HEALEncoder(
+                HEALDownSampler(
                     rec=2 ** (config.starting_n - i - 1),
                     send=2 ** (config.starting_n - i),
-                    edge_in=nfd+config.edge_feat_dim,
+                    edge_in=config.edge_feat_dim,
                     edge_out=config.edge_embed_dim,
-                    lin_in=config.edge_embed_dim,
+                    lin_in=nfd+config.edge_embed_dim,
                     lin_out=2*nfd,
 
                 )
@@ -109,7 +109,7 @@ class UpDown(nn.Module):
             send=config.starting_n,
             embed_in=1,
             embed_out=config.edge_embed_dim,
-            lin_in=2*config.node_feat_dim + config.edge_embed_dim,
+            lin_in=config.node_feat_dim + config.edge_embed_dim,
             lin_out=config.output_feat_dim,
         )
 
@@ -120,14 +120,14 @@ class UpDown(nn.Module):
         for i, depth in enumerate(config.depths):
             nfd = int(last_node_dim * (1 / (2 ** i)))
             self.decoders.append(
-                HEALDecoder(
+                HEALUpSampler(
                     rec=2 ** (last_n + i + 1),
-                    send=last_n + i,
+                    send=2 ** (last_n + i),
                     n_edge_closest=config.n_edge_closest,
-                    embed_in=1,
+                    embed_in=config.edge_feat_dim,
                     embed_out=config.edge_embed_dim,
                     lin_in=2*nfd+config.edge_embed_dim,
-                    lin_out=2*nfd,
+                    lin_out=nfd,
                 )
             )
 

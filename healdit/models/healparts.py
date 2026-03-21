@@ -58,7 +58,11 @@ def get_decoder_edge_details(
     r_lon, r_lat = resolve_location(rec)
     grid_vecs, _, _ = get_node_positions(r_lat, r_lon)
 
-    edge_attr = (torch.arange(len(r_lon) * n_edge_closest).to(dtype) % n_edge_closest).reshape(-1, 1)
+    # edge_attr = (torch.arange(len(r_lon) * n_edge_closest).to(dtype) % n_edge_closest).reshape(-1, 1)
+    edge_attr = torch.tensor(
+        get_edge_features(edge_index.numpy(), send=send, rec=rec),
+        dtype=dtype,
+    )
     edge_index = HEALPix(n=send).get_edge_index_by_knn(grid_vecs, n_edge_closest)
     return edge_index, edge_attr
 
