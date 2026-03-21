@@ -35,11 +35,6 @@ def _edge_features(relative_pos: ndarray) -> ndarray:
     
     return features
 
-def _resolve_coords(input_val: Location) -> Tuple[ndarray]:
-    if isinstance(input_val, int):
-        return get_mesh_lon_lat(input_val)
-    return input_val
-
 def get_edge_index(
         send: Location,
         rec: Location,
@@ -92,10 +87,10 @@ def get_edge_features(
     
     Returns:
         A tensor containing the edge features.
-        
+
     """
-    r_lon, r_lat = _resolve_coords(rec)
-    s_lon, s_lat = _resolve_coords(send)
+    r_lon, r_lat = resolve_location(rec)
+    s_lon, s_lat = resolve_location(send)
     
     s_pos, _, _ = get_node_positions(s_lat, s_lon)
     r_pos, r_phi, r_theta = get_node_positions(r_lat, r_lon)
@@ -147,6 +142,11 @@ def get_rotation_matrices(phi: ndarray, theta: ndarray) -> ndarray:
     rot_params = np.stack([azimuthal_rotation, polar_rotation], axis=1)
     rotation_matrices = transform.Rotation.from_euler("zy", rot_params).as_matrix()
     return rotation_matrices
+
+def resolve_location(input_val: Location) -> Tuple[ndarray]:
+    if isinstance(input_val, int):
+        return get_mesh_lon_lat(input_val)
+    return input_val
 
 def rotate_with_matrices(
         rotation_matrices: ndarray,

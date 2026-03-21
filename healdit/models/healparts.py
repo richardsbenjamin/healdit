@@ -14,6 +14,7 @@ from healdit.utils.graph import (
     get_edge_index,
     get_edge_features,
     get_node_positions,
+    resolve_location,
 )
 
 if TYPE_CHECKING:
@@ -49,16 +50,16 @@ def get_encoder_edge_details(
     return edge_index, edge_attr
 
 def get_decoder_edge_details(
-        n_out: int,
+        rec: Location,
+        send: int,
         n_edge_closest: int,
-        lat_flat: ndarray,
-        lon_flat: ndarray,
         dtype: torch.dtype = torch.float32
     ) -> Tuple[Tensor, Tensor]:
-    grid_vecs, _, _ = get_node_positions(lat_flat, lon_flat)
+    r_lon, r_lat = resolve_location(rec)
+    grid_vecs, _, _ = get_node_positions(r_lat, r_lon)
 
-    edge_attr = (torch.arange(len(lon_flat) * n_edge_closest).to(dtype) % n_edge_closest).reshape(-1, 1)
-    edge_index = HEALPix(n=n_out).get_edge_index_by_knn(grid_vecs, n_edge_closest)
+    edge_attr = (torch.arange(len(r_lon) * n_edge_closest).to(dtype) % n_edge_closest).reshape(-1, 1)
+    edge_index = HEALPix(n=send).get_edge_index_by_knn(grid_vecs, n_edge_closest)
     return edge_index, edge_attr
 
 
@@ -95,6 +96,10 @@ class HEALEncoder(nn.Module):
         edge_attr = self.edge_attr.unsqueeze(0).expand(x.size(0), -1, -1)
         v_g_prime = torch.cat([edge_attr, x], dim=-1)
 
+        print(v_g_prime.shape)
+        print(edge_attr.shape)
+        print(x.shape)
+
         v_g = self.edge_embedder(v_g_prime)
         v_m_sum = scatter_sum(v_g, self.edge_index[1], dim=1)
 
@@ -129,9 +134,9 @@ class HEALDecoder(nn.Module):
             out_dim=lin_out,
         )
 
-    def _init_edge_details(self, rec: int, send: int) -> None:
+    def _init_edge_details(self, rec: Location, send: int) -> None:
         edge_index, edge_attr = get_decoder_edge_details(
-            n_out=send, n_edge_closest=self.n_edge_closest, lat_flat=rec[1], lon_flat=rec[0], dtype=self.dtype
+            rec=rec, send=send, n_edge_closest=self.n_edge_closest, dtype=self.dtype
         )
         self.register_buffer("edge_index", edge_index)
         self.register_buffer("edge_attr", edge_attr)

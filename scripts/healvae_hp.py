@@ -74,7 +74,7 @@ class UpDown(nn.Module):
         lat_flat, lon_flat = get_lat_lon_flat_grid(*self.config.lat_lon_res)
 
         self.heal_encoder = HEALEncoder(
-            rec=config.starting_n,
+            rec=2 ** config.starting_n,
             send=(lon_flat, lat_flat),
             edge_in=config.input_feat_dim+config.edge_feat_dim,
             edge_out=config.edge_embed_dim,
@@ -85,13 +85,13 @@ class UpDown(nn.Module):
         for i, depth in enumerate(config.depths):
             nfd = config.node_feat_dim * (2 ** i)
             self.encoders.append(
-                HEALDownSampler(
-                    rec=config.starting_n - i - 1,
-                    send=config.starting_n - i,
-                    embed_in=1,
-                    embed_out=config.edge_embed_dim,
-                    lin_in=nfd+config.edge_embed_dim,
-                    lin_out=nfd,
+                HEALEncoder(
+                    rec=2 ** (config.starting_n - i - 1),
+                    send=2 ** (config.starting_n - i),
+                    edge_in=nfd+config.edge_feat_dim,
+                    edge_out=config.edge_embed_dim,
+                    lin_in=config.edge_embed_dim,
+                    lin_out=nfd ** 2,
 
                 )
             )
@@ -112,8 +112,8 @@ class UpDown(nn.Module):
         for i, depth in enumerate(config.depths):
             nfd = int(last_node_dim * (1 / (2 ** i)))
             self.decoders.append(
-                HEALUpSampler(
-                    rec=last_n + i + 1,
+                HEALDecoder(
+                    rec=2 ** (last_n + i + 1),
                     send=last_n + i,
                     n_edge_closest=config.n_edge_closest,
                     embed_in=1,
@@ -126,10 +126,15 @@ class UpDown(nn.Module):
     def forward(self, x: Batch) -> Tuple[Batch, List[torch.Tensor]]:
         var_names = list(x.data_vars.keys())
 
+        print('X IN', x.shape)
         x = self.heal_encoder(x.values)
+        print('X HEAL ENCODER', x.shape)
         x = self.encoders(x)
+        print('X ENCODERS', x.shape)
         x = self.decoders(x)
+        print('X DECODERS', x.shape)
         x = self.heal_decoder(x)
+        print('X HEAL DECODER', x.shape)
 
         x = Batch(data_vars=dict(zip(var_names, x.split(1, dim=-1))))
 
