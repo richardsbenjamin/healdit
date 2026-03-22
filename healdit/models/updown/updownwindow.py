@@ -83,8 +83,8 @@ class HEALVAEEncoderBlock(nn.Module):
         self.downsample = nn.Identity() if not downsample else HEALDownSampler(
             rec=self.healpix.nside // 2,
             send=self.healpix.nside,
-            embed_in=edge_feat_dim,
-            embed_out=edge_embed_dim,
+            edge_in=edge_feat_dim,
+            edge_out=edge_embed_dim,
             lin_in=node_feat_dim+edge_embed_dim,
             lin_out=node_feat_dim*2,
         )
@@ -155,9 +155,9 @@ class HEALVAEDecoderBlock(nn.Module):
         self.upsample = nn.Identity() if not upsample else HEALUpSampler(
             rec=self.healpix.nside * 2,
             send=self.healpix.nside,
-            embed_in=1,
+            edge_in=1,
             n_edge_closest=4,
-            embed_out=edge_embed_dim,
+            edge_out=edge_embed_dim,
             lin_in=node_feat_dim+edge_embed_dim,
             lin_out=node_feat_dim*2,
         )
@@ -237,8 +237,8 @@ class UpDownWindow(nn.Module):
         self.heal_decoder = HEALDecoder(
             rec=(lon_flat, lat_flat),
             send=2**config.starting_n,
-            embed_in=config.edge_feat_dim,
-            embed_out=config.edge_embed_dim,
+            edge_in=config.edge_feat_dim,
+            edge_out=config.edge_embed_dim,
             lin_in=config.node_feat_dim + config.edge_embed_dim,
             lin_out=config.output_feat_dim,
         )
