@@ -234,6 +234,8 @@ class HEALUpSampler(nn.Module):
         )
 
     def _init_edge_details(self, rec: Location, send: Location) -> None:
+        self.send = send
+        self.rec = rec
         healpix_send = HEALPix(nside=send)
         healpix_rec = HEALPix(nside=rec)
         # edge_attr = (torch.arange(hp.nside2npix(2 ** rec) * self.n_edge_closest).to(self.dtype) % self.n_edge_closest).reshape(-1, 1)
