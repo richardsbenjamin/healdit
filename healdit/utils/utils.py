@@ -28,6 +28,16 @@ def broadcast(src: Tensor, other: Tensor, dim: int) -> Tensor:
     src = src.expand(other.size())
     return src
 
+def get_attention_mask(shifted_windows_mask) -> torch.tensor:
+    if not isinstance(shifted_windows_mask, torch.Tensor):
+        shifted_windows_mask = torch.tensor(shifted_windows_mask)
+    mask_q = shifted_windows_mask.unsqueeze(2)
+    mask_k = shifted_windows_mask.unsqueeze(1)
+    mask = mask_q & mask_k
+    attention_mask = torch.zeros_like(mask, dtype=torch.float32)
+    attention_mask.masked_fill_(~mask, float(-100.0))
+    return attention_mask
+
 def load_config(
         config_name: str = "config", 
         config_path: Optional[str] = None,

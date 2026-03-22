@@ -7,6 +7,8 @@ import numpy as np
 import torch
 from scipy.spatial import cKDTree
 
+from healdit.utils.heal import get_neighbours_all, get_shifted_windows
+
 if TYPE_CHECKING:
     from numpy import ndarray
     from torch import Tensor
@@ -48,7 +50,7 @@ class HEALWindow(HEALPix):
 
     def __init__(self, n: int, w: int) -> None:
         # need to put in data validation checks, etc
-        super().__init__(n)
+        super().__init__(n=n)
         self.w = w
         self.n_sub_w = n - w
         self.nside_window = 2 ** self.n_sub_w

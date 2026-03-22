@@ -22,6 +22,32 @@ class FeedForward(nn.Sequential):
             nn.Linear(in_features=hidden_dim, out_features=out_dim, dtype=dtype),
         )
 
+class FeedForwardSwin(nn.Sequential):
+    """
+    Feed forward module used in the transformer encoder.
+    """
+
+    def __init__(self,
+                 in_features: int,
+                 hidden_features: int,
+                 out_features: int,
+                 dropout: float = 0.) -> None:
+        """
+        Constructor method
+        :param in_features: (int) Number of input features
+        :param hidden_features: (int) Number of hidden features
+        :param out_features: (int) Number of output features
+        :param dropout: (float) Dropout factor
+        """
+        # Call super constructor and init modules
+        super().__init__(
+            nn.Linear(in_features=in_features, out_features=hidden_features, dtype=torch.float32),
+            nn.GELU(),
+            nn.Dropout(p=dropout),
+            nn.Linear(in_features=hidden_features, out_features=out_features, dtype=torch.float32),
+            nn.Dropout(p=dropout)
+        )
+
 
 class MessagePassing(nn.Module):
     
