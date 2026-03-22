@@ -97,7 +97,7 @@ if __name__ == "__main__":
 
     cfg = load_config(args.config_name, overrides=comma_list_to_list(args.overrides))
     healvae_cfg = instantiate(cfg.healvae)
-    healvae_cfg.depths = [1]
+    healvae_cfg.depths = [1, 1]
     healvae_cfg.starting_n = 6
     
     train_params = instantiate(cfg.trainparams)
