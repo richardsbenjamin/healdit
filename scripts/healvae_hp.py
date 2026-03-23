@@ -69,7 +69,7 @@ from healdit.utils import load_config
 from healdit.utils.parsers import comma_list_to_list, get_train_args
 
 
-from healdit.models.updown import UpDownWindow, UpDownSampleOnly, UpDown
+from healdit.models.updown import UpDownWindow, UpDownSampleOnly, UpDown, UpDownVAEWindow
 
 
 def get_idx(ds: xr.Dataset, date: str) -> int:
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=train_params.batch_size, collate_fn=heal_collate_fn)
 
     healvae_cfg.num_heads = 4
-    heal_vae = UpDown(healvae_cfg)
+    heal_vae = UpDownVAEWindow(healvae_cfg)
 
     x = next(iter(train_dataloader))
     y = heal_vae(x)
