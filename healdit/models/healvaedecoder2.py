@@ -77,9 +77,9 @@ class HEALVAEDecoderBlock(nn.Module):
         self.upsample = nn.Identity() if not upsample else HEALUpSampler(
             rec=self.healpix.nside * 2,
             send=self.healpix.nside,
-            embed_in=1,
+            edge_in=1,
             n_edge_closest=4,
-            embed_out=edge_embed_dim,
+            edge_out=edge_embed_dim,
             lin_in=node_feat_dim+edge_embed_dim,
             lin_out=node_feat_dim*2,
         )
