@@ -259,13 +259,6 @@ class HEALUpSampler(nn.Module):
         return self.linear(v_m_sum)
 
 
-
-
-
-
-
-
-
 class WindowMultiHeadAttention(nn.Module):
     """
     This class implements window-based Multi-Head-Attention.

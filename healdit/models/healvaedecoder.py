@@ -159,8 +159,8 @@ class HEALVAEDecoderBlock(nn.Module):
             rec=self.healpix.nside,
             send=self.healpix.nside // 2,
             n_edge_closest=self.n_edge_closest,
-            embed_in=1,
-            embed_out=edge_embed_dim,
+            edge_in=edge_feat_dim,
+            edge_out=edge_embed_dim,
             lin_in=(2*node_feat_dim)+edge_embed_dim,
             lin_out=node_feat_dim,
         )
@@ -201,7 +201,7 @@ class HEALVAEDecoder(nn.Module):
         for i, depth in enumerate(depths):
             self.layers.append(
                 HEALVAEDecoderBlock(
-                    healpix=HEALPix(starting_n + i),
+                    healpix=HEALPix(n=starting_n + i),
                     depth=depth,
                     node_feat_dim=int(node_feat_dim * (1 / (2 ** i))),
                     node_hidden_dim=int(node_feat_dim * (1 / (2 ** i))),

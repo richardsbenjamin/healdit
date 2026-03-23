@@ -59,10 +59,10 @@ class HEALVAE(nn.Module):
         )
         self.heal_decoder = HEALDecoder(
             rec=(lon_flat, lat_flat),
-            send=config.starting_n,
+            send=2**config.starting_n,
             n_edge_closest=config.n_edge_closest,
-            embed_in=1,
-            embed_out=config.edge_embed_dim,
+            edge_in=config.edge_feat_dim,
+            edge_out=config.edge_embed_dim,
             lin_in=config.node_feat_dim + config.edge_embed_dim,
             lin_out=config.output_feat_dim,
         )
