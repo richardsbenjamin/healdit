@@ -75,13 +75,13 @@ class HEALVAEDecoderBlock(nn.Module):
                 ResBlock(node_feat_dim, node_hidden_dim, edge_embed_dim)
             )
         self.upsample = nn.Identity() if not upsample else HEALUpSampler(
-            rec=self.healpix.nside * 2,
-            send=self.healpix.nside,
+            rec=self.healpix.nside,
+            send=self.healpix.nside // 2,
             edge_in=edge_feat_dim,
             n_edge_closest=4,
             edge_out=edge_embed_dim,
-            lin_in=node_feat_dim+edge_embed_dim,
-            lin_out=node_feat_dim*2,
+            lin_in=(2*node_feat_dim)+edge_embed_dim,
+            lin_out=node_feat_dim,
         )
 
     def _set_res_block_edge_details(self) -> None:
