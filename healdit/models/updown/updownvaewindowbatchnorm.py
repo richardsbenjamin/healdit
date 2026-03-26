@@ -318,7 +318,7 @@ class HEALVAEDecoder(nn.Module):
             num_heads: int,
             z_dim: int,
             n_edge_closest: int = 4,
-            use_bn: bool = True,
+            bn_levels: list = [],
         ) -> None:
         super().__init__()
         self.layers = nn.ModuleList()
@@ -335,7 +335,7 @@ class HEALVAEDecoder(nn.Module):
                     z_dim=z_dim,
                     upsample=i != 0,
                     n_edge_closest=n_edge_closest,
-                    use_bn=use_bn,
+                    bn_levels=starting_n + i in bn_levels,
                 )
             )
 
@@ -401,7 +401,7 @@ class UpDownVAEWindowBatchNorm(nn.Module):
             edge_embed_dim=config.edge_embed_dim,
             z_dim=config.z_dim,
             num_heads=config.num_heads,
-            use_bn=config.use_bn,
+            bn_levels=config.bn_levels,
         )
 
     def forward(self, x: Batch) -> Tuple[Batch, List[torch.Tensor]]:
