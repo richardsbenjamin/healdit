@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import torch 
 import torch.nn as nn
+import torch.nn.utils.spectral_norm as spectral_norm
 
 from healdit.batch import Batch
 from healdit.models.heal import HEALPix, HEALWindow
@@ -157,7 +158,7 @@ class Block(nn.Module):
             number_of_heads=num_heads,
             shift=True,
         )
-        self.feed_forward2 = nn.Linear(node_hidden_dim, node_out_dim)
+        self.feed_forward2 = spectral_norm(nn.Linear(node_hidden_dim, node_out_dim))
 
     def forward(self, x: torch.tensor) -> torch.tensor:
         residual = x
@@ -192,6 +193,7 @@ class TopDownBlock(nn.Module):
             z_dim: int,
             num_heads: int,
             n: int,
+            use_bn: bool = True,
         ) -> None:
         super().__init__()
         self.z_dim = z_dim
@@ -202,6 +204,7 @@ class TopDownBlock(nn.Module):
             num_heads=num_heads,
             n=n,
         )
+        self.use_bn = use_bn
         self.bn_qm = nn.BatchNorm1d(z_dim, momentum=0.01)
         self.bn_qm.bias.data.zero_()
         self.bn_qm.bias.requires_grad = False
@@ -236,9 +239,10 @@ class TopDownBlock(nn.Module):
         xa = torch.cat([x, a], dim=-1)
         delta_m, delta_v = self.block(xa).chunk(2, dim=-1)
 
-        delta_m = delta_m.transpose(1, 2)
-        delta_m = self.bn_qm(delta_m)
-        delta_m = delta_m.transpose(1, 2)
+        if self.use_bn:
+            delta_m = delta_m.transpose(1, 2)
+            delta_m = self.bn_qm(delta_m)
+            delta_m = delta_m.transpose(1, 2)
 
         qm = pm + delta_m
         qv = pv + delta_v
@@ -265,7 +269,8 @@ class HEALVAEDecoderBlock(nn.Module):
             edge_embed_dim: int,
             num_heads: int,
             upsample: bool,   
-            n_edge_closest: int = 4,       
+            n_edge_closest: int = 4, 
+            use_bn: bool = True,  
         ) -> None:
         super().__init__()
         self.healpix = healpix
@@ -279,6 +284,7 @@ class HEALVAEDecoderBlock(nn.Module):
                     z_dim=z_dim,
                     num_heads=num_heads,
                     n=self.healpix.n,
+                    use_bn=use_bn,
                 )
             )
         self.upsample = nn.Identity() if not upsample else HEALUpSampler(
@@ -313,6 +319,7 @@ class HEALVAEDecoder(nn.Module):
             num_heads: int,
             z_dim: int,
             n_edge_closest: int = 4,
+            use_bn: bool = True,
         ) -> None:
         super().__init__()
         self.layers = nn.ModuleList()
@@ -328,6 +335,8 @@ class HEALVAEDecoder(nn.Module):
                     num_heads=num_heads,
                     z_dim=z_dim,
                     upsample=i != 0,
+                    n_edge_closest=n_edge_closest,
+                    use_bn=use_bn,
                 )
             )
 
@@ -392,7 +401,8 @@ class UpDownVAEWindowBatchNorm(nn.Module):
             edge_feat_dim=config.edge_feat_dim,
             edge_embed_dim=config.edge_embed_dim,
             z_dim=config.z_dim,
-            num_heads=config.num_heads
+            num_heads=config.num_heads,
+            use_bn=config.use_bn,
         )
 
     def forward(self, x: Batch) -> Tuple[Batch, List[torch.Tensor]]:
