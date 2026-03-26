@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 import torch 
 import torch.nn as nn
-import torch.nn.utils.spectral_norm as spectral_norm
 
 from healdit.batch import Batch
 from healdit.models.heal import HEALPix, HEALWindow
@@ -197,7 +196,7 @@ class TopDownBlock(nn.Module):
         ) -> None:
         super().__init__()
         self.z_dim = z_dim
-        self.block = Block(
+        self.posterior = Block(
             node_feat_dim=2*in_dim,
             node_hidden_dim=hidden_dim,
             node_out_dim=2*z_dim,
@@ -237,7 +236,7 @@ class TopDownBlock(nn.Module):
         px = pfeat[:, :, self.z_dim*2:]
 
         xa = torch.cat([x, a], dim=-1)
-        delta_m, delta_v = self.block(xa).chunk(2, dim=-1)
+        delta_m, delta_v = self.posterior(xa).chunk(2, dim=-1)
 
         if self.use_bn:
             delta_m = delta_m.transpose(1, 2)
