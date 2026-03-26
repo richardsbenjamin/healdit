@@ -195,7 +195,7 @@ class TopDownBlock(nn.Module):
         ) -> None:
         super().__init__()
         self.z_dim = z_dim
-        self.block = Block(
+        self.posterior = Block(
             node_feat_dim=2*in_dim,
             node_hidden_dim=hidden_dim,
             node_out_dim=2*z_dim,
