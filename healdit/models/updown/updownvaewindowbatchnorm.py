@@ -203,6 +203,9 @@ class TopDownBlock(nn.Module):
             n=n,
         )
         self.bn_qm = nn.BatchNorm1d(z_dim)
+        self.bn_qm.bias.data.zero_()
+        self.bn_qm.bias.requires_grad = False
+        
         self.prior = Block(
             node_feat_dim=in_dim,
             node_hidden_dim=hidden_dim,
