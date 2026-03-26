@@ -335,7 +335,7 @@ class HEALVAEDecoder(nn.Module):
                     z_dim=z_dim,
                     upsample=i != 0,
                     n_edge_closest=n_edge_closest,
-                    bn_levels=starting_n + i in bn_levels,
+                    use_bn=starting_n + i in bn_levels,
                 )
             )
 
