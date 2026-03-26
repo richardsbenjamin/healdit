@@ -143,7 +143,7 @@ class Block(nn.Module):
         ) -> None:
         super().__init__()
         self.feed_forward1 = nn.Sequential(
-            spectral_norm(nn.Linear(node_feat_dim, node_hidden_dim)),
+            nn.Linear(node_feat_dim, node_hidden_dim),
             nn.GELU()
         )
         self.message_passing1 = HEALTransformerBlock(
@@ -158,7 +158,7 @@ class Block(nn.Module):
             number_of_heads=num_heads,
             shift=True,
         )
-        self.feed_forward2 = spectral_norm(nn.Linear(node_hidden_dim, node_out_dim))
+        self.feed_forward2 = nn.Linear(node_hidden_dim, node_out_dim)
 
     def forward(self, x: torch.tensor) -> torch.tensor:
         residual = x
