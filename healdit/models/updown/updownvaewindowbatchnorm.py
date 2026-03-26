@@ -143,7 +143,7 @@ class Block(nn.Module):
         ) -> None:
         super().__init__()
         self.feed_forward1 = nn.Sequential(
-            nn.Linear(node_feat_dim, node_hidden_dim),
+            spectral_norm(nn.Linear(node_feat_dim, node_hidden_dim)),
             nn.GELU()
         )
         self.message_passing1 = HEALTransformerBlock(
