@@ -230,7 +230,7 @@ class TopDownBlock(nn.Module):
         px = pfeat[:, :, self.z_dim*2:]
 
         xa = torch.cat([x, a], dim=-1)
-        delta_m, delta_v = self.block(xa).chunk(2, dim=-1)
+        delta_m, delta_v = self.posterior(xa).chunk(2, dim=-1)
         qm = pm + delta_m
         qv = pv + delta_v
 
