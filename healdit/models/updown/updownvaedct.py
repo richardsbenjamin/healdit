@@ -230,18 +230,18 @@ class TopDownBlock(nn.Module):
         pv = pfeat[:, :, self.z_dim:self.z_dim*2]
         px = pfeat[:, :, self.z_dim*2:]
 
-        pm = dct_2d(pm)
-        pv = dct_2d(pv)
+        pm = dct_2d(pm.transpose(1, 2)).transpose(1, 2)
+        pv = dct_2d(pv.transpose(1, 2)).transpose(1, 2)
 
         xa = torch.cat([x, a], dim=-1)
         delta_m, delta_v = self.posterior(xa).chunk(2, dim=-1)
-        qm = delta_m # pm + delta_m
-        qv = delta_v # pv + delta_v
+        qm = pm + delta_m
+        qv = pv + delta_v
 
         z = self.z_feedforward(
             draw_gaussian_diag_samples(qm, qv)
         )
-        z = idct_2d(z) 
+        z = idct_2d(z.transpose(1, 2)).transpose(1, 2) 
 
         kl = gaussian_analytical_kl(qm, pm, qv, pv)
         x = x + px 
