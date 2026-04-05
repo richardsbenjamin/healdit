@@ -235,8 +235,8 @@ class TopDownBlock(nn.Module):
 
         xa = torch.cat([x, a], dim=-1)
         delta_m, delta_v = self.posterior(xa).chunk(2, dim=-1)
-        qm = pm + delta_m
-        qv = pv + delta_v
+        qm = delta_m # pm + delta_m
+        qv = delta_v # pv + delta_v
 
         z = self.z_feedforward(
             draw_gaussian_diag_samples(qm, qv)
