@@ -183,6 +183,20 @@ def gaussian_analytical_kl(
         + 0.5 * (logsigma1.exp() ** 2 + (mu1 - mu2) ** 2) / (logsigma2.exp() ** 2)
     )
 
+def compute_dct_context_nested(raw_x: torch.Tensor, size: int = 128) -> torch.Tensor:
+    x_sub = raw_x[:, ::10, :]
+    
+    x_t = x_sub.transpose(1, 2)
+    full_dct = dct(x_t)
+    
+    low_freq = full_dct[:, :, :size]
+    
+    context = low_freq.reshape(raw_x.shape[0], -1)
+    
+    eps = 1e-6
+    mu = context.mean(dim=-1, keepdim=True)
+    std = context.std(dim=-1, keepdim=True)
+    return (context - mu) / (std + eps)
 
 class TopDownBlock(nn.Module): 
 
@@ -193,11 +207,13 @@ class TopDownBlock(nn.Module):
             z_dim: int,
             num_heads: int,
             n: int,
+            first: bool = False
         ) -> None:
         super().__init__()
+        self.first = first
         self.z_dim = z_dim
         self.posterior = Block(
-            node_feat_dim=2*in_dim,
+            node_feat_dim=(4 if first else 2)*in_dim,
             node_hidden_dim=hidden_dim,
             node_out_dim=2*z_dim,
             num_heads=num_heads,
@@ -224,16 +240,19 @@ class TopDownBlock(nn.Module):
             self,
             x: torch.Tensor,
             a: torch.Tensor,
+            a_dct: torch.Tensor,
         ) -> torch.Tensor:
         pfeat = self.prior(x)
         pm = pfeat[:, :, :self.z_dim]
         pv = pfeat[:, :, self.z_dim:self.z_dim*2]
         px = pfeat[:, :, self.z_dim*2:]
 
-        pm = dct(pm.transpose(1, 2)).transpose(1, 2)
-        pv = dct(pv.transpose(1, 2)).transpose(1, 2)
+        if a_dct is not None:
+            context_expanded = a_dct.unsqueeze(1).expand(-1, 768, -1)
+            xa = torch.cat([x, a, context_expanded], dim=-1)
+        else:
+            xa = torch.cat([x, a], dim=-1)
 
-        xa = torch.cat([x, a], dim=-1)
         delta_m, delta_v = self.posterior(xa).chunk(2, dim=-1)
         qm = pm + delta_m
         qv = pv + delta_v
@@ -241,7 +260,6 @@ class TopDownBlock(nn.Module):
         z = self.z_feedforward(
             draw_gaussian_diag_samples(qm, qv)
         )
-        z = idct(z.transpose(1, 2)).transpose(1, 2)
 
         kl = gaussian_analytical_kl(qm, pm, qv, pv)
         x = x + px 
@@ -263,7 +281,8 @@ class HEALVAEDecoderBlock(nn.Module):
             edge_embed_dim: int,
             num_heads: int,
             upsample: bool,   
-            n_edge_closest: int = 4,       
+            n_edge_closest: int = 4,  
+            first: bool = False     
         ) -> None:
         super().__init__()
         self.healpix = healpix
@@ -277,6 +296,7 @@ class HEALVAEDecoderBlock(nn.Module):
                     z_dim=z_dim,
                     num_heads=num_heads,
                     n=self.healpix.n,
+                    first=first,
                 )
             )
         self.upsample = nn.Identity() if not upsample else HEALUpSampler(
@@ -289,11 +309,11 @@ class HEALVAEDecoderBlock(nn.Module):
             lin_out=node_feat_dim,
         )
 
-    def forward(self, x: torch.Tensor, a: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, a: torch.Tensor, a_dct: torch.Tensor) -> torch.Tensor:
         block_kl = []
         x = self.upsample(x)
         for block in self.blocks:
-            x, kl = block(x, a)
+            x, kl = block(x, a, a_dct)
             block_kl.append(kl)
         return x, block_kl
 
@@ -326,17 +346,25 @@ class HEALVAEDecoder(nn.Module):
                     num_heads=num_heads,
                     z_dim=z_dim,
                     upsample=i != 0,
+                    first=i==0,
                 )
             )
 
-    def forward(self, activations: torch.Tensor) -> Tuple[torch.Tensor, Dict[int, List[torch.Tensor]]]:
+    def forward(
+            self, 
+            activations: torch.Tensor,
+            a_dct: torch.Tensor,
+        ) -> Tuple[torch.Tensor, Dict[int, List[torch.Tensor]]]:
         activations = activations[::-1]
         x = None
         decoder_kl = {}
         for a, layer in zip(activations, self.layers): 
             if x is None:
                 x = torch.zeros_like(a)
-            x, layer_kl = layer(x, a)
+            else:
+                a_dct = None 
+
+            x, layer_kl = layer(x, a, a_dct)
             decoder_kl[layer.healpix.n] = layer_kl
 
         return x, decoder_kl
@@ -396,9 +424,11 @@ class UpDownVAEDCT(nn.Module):
     def forward(self, x: Batch) -> Tuple[Batch, List[torch.Tensor]]:
         var_names = list(x.data_vars.keys())
 
+        a_dct = compute_dct_context_nested(x.values, size=128)
+
         x = self.heal_encoder(x.values)
         activations = self.encoder(x)
-        x, decoder_kl = self.decoder(activations)
+        x, decoder_kl = self.decoder(activations, a_dct)
         x = self.heal_decoder(x)
 
         x = Batch(data_vars=dict(zip(var_names, x.split(1, dim=-1))))
