@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import torch 
 import torch.nn as nn
-from torch_dct import dct_2d, idct_2d
+from torch_dct import dct, idct
 
 from healdit.batch import Batch
 from healdit.models.heal import HEALPix, HEALWindow
@@ -230,8 +230,8 @@ class TopDownBlock(nn.Module):
         pv = pfeat[:, :, self.z_dim:self.z_dim*2]
         px = pfeat[:, :, self.z_dim*2:]
 
-        pm = dct_2d(pm.transpose(1, 2)).transpose(1, 2)
-        pv = dct_2d(pv.transpose(1, 2)).transpose(1, 2)
+        pm = dct(pm.transpose(1, 2)).transpose(1, 2)
+        pv = dct(pv.transpose(1, 2)).transpose(1, 2)
 
         xa = torch.cat([x, a], dim=-1)
         delta_m, delta_v = self.posterior(xa).chunk(2, dim=-1)
@@ -241,7 +241,7 @@ class TopDownBlock(nn.Module):
         z = self.z_feedforward(
             draw_gaussian_diag_samples(qm, qv)
         )
-        z = idct_2d(z.transpose(1, 2)).transpose(1, 2) 
+        z = idct(z.transpose(1, 2)).transpose(1, 2)
 
         kl = gaussian_analytical_kl(qm, pm, qv, pv)
         x = x + px 
